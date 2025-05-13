@@ -5,101 +5,94 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
-<?import javafx.scene.image.Image?> <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
 <?import javafx.scene.text.Text?>
 <?import javafx.scene.text.TextFlow?>
 
 <StackPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="com.lms.quanlythuvien.controllers.LoginScreenController"
            prefHeight="700.0" prefWidth="1000.0"
-           style="-fx-background-color: white;"> <children>
-    <VBox alignment="TOP_CENTER" maxHeight="550.0" maxWidth="400.0"
-          style="-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0.5, 0, 0);"
-          spacing="15.0">
-        <padding>
-            <Insets top="30.0" right="40.0" bottom="30.0" left="40.0"/>
-        </padding>
+           style="-fx-background-color: #f4f6f8;" stylesheets="@../css/styles.css">
+    <children>
+        <VBox alignment="TOP_CENTER" maxHeight="560.0" maxWidth="420.0" spacing="15.0"
+              style="-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 15, 0.3, 0, 0);">
+            <padding>
+                <Insets top="35.0" right="45.0" bottom="35.0" left="45.0"/>
+            </padding>
 
-        <children>
-            <TextFlow textAlignment="CENTER" VBox.vgrow="NEVER">
-                <Text text="UET" fill="#1d5193">
-                    <font><Font name="Comfortaa Regular" size="36.0"/></font>
+            <children>
+                <TextFlow textAlignment="CENTER" VBox.vgrow="NEVER">
+                    <children>
+                        <Text text="UET" styleClass="logo-text-uet"/>
+                        <Text text="-" styleClass="logo-text-separator"/>
+                        <Text text="VNU" styleClass="logo-text-vnu"/>
+                    </children>
+                </TextFlow>
+                <Text text="Library" styleClass="logo-text-library-main" textAlignment="CENTER">
+                    <VBox.margin>
+                        <Insets bottom="15.0"/>
+                    </VBox.margin>
                 </Text>
-                <Text text="-" fill="black">
-                    <font><Font name="Comfortaa Regular" size="36.0"/></font>
-                </Text>
-                <Text text="VNU" fill="#007e3f">
-                    <font><Font name="Comfortaa Regular" size="36.0"/></font>
-                </Text>
-            </TextFlow>
-            <Text text="Library" fill="black" textAlignment="CENTER">
-                <font><Font name="Comfortaa Regular" size="36.0"/></font>
-                <VBox.margin>
-                    <Insets bottom="10.0"/>
-                </VBox.margin>
-            </Text>
 
-            <Label text="Welcome Back!" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #333;"/>
-            <Label text="Sign in to continue to your Digital Library" style="-fx-font-size: 13px; -fx-text-fill: #666;"/>
+                <Label text="Chào mừng trở lại!" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2d3748;"/>
+                <Label text="Đăng nhập để tiếp tục vào Thư viện số" style="-fx-font-size: 13px; -fx-text-fill: #555;"/>
 
-            <Label fx:id="errorLabel" text="" style="-fx-text-fill: red; -fx-font-size: 12px;" managed="false" visible="false">
-                <VBox.margin>
-                    <Insets top="5.0" bottom="5.0"/>
-                </VBox.margin>
-            </Label>
+                <Label fx:id="errorLabel" text="" styleClass="error-label" managed="false" visible="false">
+                    <VBox.margin>
+                        <Insets top="5.0" bottom="0"/>
+                    </VBox.margin>
+                </Label>
 
-            <Label text="Email" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
-            <TextField fx:id="emailField" promptText="username@collegename.ac.in" style="-fx-font-family: 'Comfortaa Regular'; -fx-font-size: 14px;"/>
+                <Label text="Địa chỉ Email" styleClass="form-label" VBox.vgrow="NEVER">
+                    <VBox.margin>
+                        <Insets top="10.0"/>
+                    </VBox.margin>
+                </Label>
+                <TextField fx:id="emailField" promptText="vidu@vnu.edu.vn" styleClass="form-input"/>
 
-            <Label text="Password" style="-fx-font-size: 14px; -fx-font-weight: bold;">
-                <VBox.margin>
-                    <Insets top="10.0"/>
-                </VBox.margin>
-            </Label>
-            <HBox spacing="5" alignment="CENTER_LEFT">
-                <PasswordField fx:id="passwordField" promptText="••••••••" style="-fx-font-family: 'Comfortaa Regular'; -fx-font-size: 14px;" HBox.hgrow="ALWAYS"/>
-                <ImageView fx:id="togglePasswordVisibility" fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" style="-fx-cursor: hand;">
-                    <image>
-                        <Image url="@../images/eye_slash_icon.png"/> </image>
-                </ImageView>
-            </HBox>
-            <TextField fx:id="visiblePasswordField" promptText="••••••••" style="-fx-font-family: 'Comfortaa Regular'; -fx-font-size: 14px;" managed="false" visible="false"/>
+                <Label text="Mật khẩu" styleClass="form-label">
+                    <VBox.margin>
+                        <Insets top="10.0"/>
+                    </VBox.margin>
+                </Label>
+                <HBox spacing="5" alignment="CENTER_LEFT" styleClass="form-input" style="-fx-padding: 0; -fx-border-width: 0;"> <padding><Insets left="10.0"/></padding> <PasswordField fx:id="passwordField" promptText="Nhập mật khẩu của bạn" HBox.hgrow="ALWAYS"
+                                                                                                                                                                                        style="-fx-background-color: transparent; -fx-border-width: 0; -fx-font-family: 'Arial'; -fx-font-size: 14px;"/>
+                    <ImageView fx:id="togglePasswordVisibility" fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" style="-fx-cursor: hand;"
+                               onMouseClicked="#togglePasswordVisibilityClicked">
+                        <image><Image url="@../images/eye_slash_icon.png"/></image>
+                        <HBox.margin><Insets right="8.0"/></HBox.margin>
+                    </ImageView>
+                </HBox>
+                <TextField fx:id="visiblePasswordField" promptText="Nhập mật khẩu của bạn" styleClass="form-input" managed="false" visible="false"/>
 
+                <HBox alignment="CENTER_RIGHT">
+                    <Label fx:id="forgotPasswordLink" text="Quên mật khẩu?" styleClass="link-label"
+                           onMouseClicked="#handleForgotPasswordLinkClick"/>
+                    <VBox.margin>
+                        <Insets top="5.0"/>
+                    </VBox.margin>
+                </HBox>
 
-            <HBox alignment="CENTER_RIGHT" spacing="10.0">
-                <children>
-                    <Label fx:id="forgotPasswordLink" text="Forgot password?"
-                           style="-fx-font-size: 12px; -fx-text-fill: #537cac; -fx-cursor: hand;"/>
-                </children>
-                <VBox.margin>
-                    <Insets top="5.0"/>
-                </VBox.margin>
-            </HBox>
+                <Button fx:id="loginButton" text="Đăng nhập" styleClass="primary-button"
+                        maxWidth="Infinity" onAction="#handleLoginButtonAction">
+                    <VBox.margin>
+                        <Insets top="20.0"/>
+                    </VBox.margin>
+                </Button>
 
-            <Button fx:id="loginButton" text="Login"
-                    style="-fx-background-color: #537cac; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-background-radius: 5;"
-                    prefWidth="Infinity" onAction="#handleLoginButtonAction">
-                <VBox.margin>
-                    <Insets top="15.0"/>
-                </VBox.margin>
-            </Button>
-
-            <HBox alignment="CENTER" spacing="5.0">
-                <children>
-                    <Label text="New User?" style="-fx-font-size: 12px;"/>
-                    <Label fx:id="registerHereLink" text="Register Here"
-                           style="-fx-font-size: 12px; -fx-text-fill: #537cac; -fx-cursor: hand; -fx-underline: true;"/>
-                </children>
-                <VBox.margin>
-                    <Insets top="20.0"/>
-                </VBox.margin>
-            </HBox>
-        </children>
-    </VBox>
-</children>
+                <HBox alignment="CENTER" spacing="5.0">
+                    <Label text="Người dùng mới?" style="-fx-font-size: 12px; -fx-text-fill: #4A5568;"/>
+                    <Label fx:id="registerHereLink" text="Đăng ký tại đây" styleClass="link-label"
+                           onMouseClicked="#handleRegisterHereLinkClick"/>
+                    <VBox.margin>
+                        <Insets top="20.0"/>
+                    </VBox.margin>
+                </HBox>
+            </children>
+        </VBox>
+    </children>
 </StackPane>

@@ -5,8 +5,8 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
@@ -20,9 +20,10 @@
     <children>
         <VBox alignment="TOP_CENTER" maxHeight="650.0" maxWidth="450.0"
               style="-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0.5, 0, 0);"
-              spacing="10.0"> <padding>
-            <Insets top="25.0" right="40.0" bottom="25.0" left="40.0"/>
-        </padding>
+              spacing="10.0">
+            <padding>
+                <Insets top="25.0" right="40.0" bottom="25.0" left="40.0"/>
+            </padding>
 
             <children>
                 <TextFlow textAlignment="CENTER" VBox.vgrow="NEVER">
@@ -74,8 +75,8 @@
                 </Label>
                 <HBox spacing="5" alignment="CENTER_LEFT">
                     <PasswordField fx:id="passwordField" promptText="Enter your password" style="-fx-font-family: 'Comfortaa Regular'; -fx-font-size: 14px;" HBox.hgrow="ALWAYS"/>
-                    <ImageView fx:id="togglePasswordVisibility" fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" style="-fx-cursor: hand;">
-                        <image><Image url="@../images/eye_slash_icon.png"/></image>
+                    <ImageView fx:id="togglePasswordVisibility" fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" style="-fx-cursor: hand;"
+                               onMouseClicked="#toggleMainPasswordVisibilityClicked"> <image><Image url="@../images/eye_slash_icon.png"/></image>
                     </ImageView>
                 </HBox>
                 <TextField fx:id="visiblePasswordField" promptText="Enter your password" style="-fx-font-family: 'Comfortaa Regular'; -fx-font-size: 14px;" managed="false" visible="false"/>
@@ -87,8 +88,8 @@
                 </Label>
                 <HBox spacing="5" alignment="CENTER_LEFT">
                     <PasswordField fx:id="confirmPasswordField" promptText="Confirm your password" style="-fx-font-family: 'Comfortaa Regular'; -fx-font-size: 14px;" HBox.hgrow="ALWAYS"/>
-                    <ImageView fx:id="toggleConfirmPasswordVisibility" fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" style="-fx-cursor: hand;">
-                        <image><Image url="@../images/eye_slash_icon.png"/></image>
+                    <ImageView fx:id="toggleConfirmPasswordVisibility" fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" style="-fx-cursor: hand;"
+                               onMouseClicked="#toggleConfirmPasswordVisibilityClicked"> <image><Image url="@../images/eye_slash_icon.png"/></image>
                     </ImageView>
                 </HBox>
                 <TextField fx:id="visibleConfirmPasswordField" promptText="Confirm your password" style="-fx-font-family: 'Comfortaa Regular'; -fx-font-size: 14px;" managed="false" visible="false"/>
@@ -96,18 +97,17 @@
 
                 <Button fx:id="registerButton" text="Register"
                         style="-fx-background-color: #537cac; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-background-radius: 5;"
-                        prefWidth="Infinity" onAction="#handleRegisterButtonAction">
-                    <VBox.margin>
-                        <Insets top="20.0"/>
-                    </VBox.margin>
+                        prefWidth="Infinity" onAction="#handleRegisterButtonAction"> <VBox.margin>
+                    <Insets top="20.0"/>
+                </VBox.margin>
                 </Button>
 
                 <HBox alignment="CENTER" spacing="5.0">
                     <children>
                         <Label text="Already a User?" style="-fx-font-size: 12px;"/>
                         <Label fx:id="loginNowLink" text="Login now!"
-                               style="-fx-font-size: 12px; -fx-text-fill: #537cac; -fx-cursor: hand; -fx-underline: true;"/>
-                    </children>
+                               style="-fx-font-size: 12px; -fx-text-fill: #537cac; -fx-cursor: hand; -fx-underline: true;"
+                               onMouseClicked="#handleLoginNowLinkClick"/> </children>
                     <VBox.margin>
                         <Insets top="15.0"/>
                     </VBox.margin>

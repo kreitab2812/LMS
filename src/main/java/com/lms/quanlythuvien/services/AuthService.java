@@ -2,89 +2,102 @@ package com.lms.quanlythuvien.services;
 
 import com.lms.quanlythuvien.models.User;
 import com.lms.quanlythuvien.models.User.Role;
-import com.lms.quanlythuvien.utils.PasswordUtils; // IMPORT LỚP TIỆN ÍCH MỚI
+import com.lms.quanlythuvien.utils.PasswordUtils;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 public class AuthService {
 
-    private final List<User> userList;
+    private final UserService userService; // SỬ DỤNG UserService
 
-    private static final String ADMIN_EMAIL = "24022274@vnu.edu.vn";
-    private static final String ADMIN_USERNAME = "admin_vnu";
-    private static final String ADMIN_RAW_PASSWORD = "LGTV2006"; // Mật khẩu gốc chỉ dùng để khởi tạo lần đầu
-
-    public AuthService() {
-        this.userList = new ArrayList<>();
-        initializeAdminAccount();
-    }
-
-    private void initializeAdminAccount() {
-        // Băm mật khẩu Admin trước khi lưu
-        String adminPasswordHash = PasswordUtils.hashPassword(ADMIN_RAW_PASSWORD); // SỬ DỤNG BCRYPT
-
-        if (findUserByEmailInternal(ADMIN_EMAIL).isEmpty()) {
-            User adminUser = new User(
-                    ADMIN_USERNAME,
-                    ADMIN_EMAIL,
-                    adminPasswordHash, // LƯU MẬT KHẨU ĐÃ BĂM
-                    Role.ADMIN
-            );
-            this.userList.add(adminUser);
-            System.out.println("Admin account initialized (with hashed password): " + ADMIN_EMAIL);
-        }
+    public AuthService(UserService userService) { // NHẬN UserService qua constructor
+        System.out.println("DEBUG_AS_CONSTRUCTOR: AuthService constructor started (with UserService).");
+        this.userService = userService;
+        // Không cần initializeAdminAccount() ở đây nữa, UserService đã làm
+        System.out.println("DEBUG_AS_CONSTRUCTOR: AuthService constructor finished.");
     }
 
     public AuthResult login(String email, String password) {
-        Optional<User> userOptional = findUserByEmailInternal(email);
+        System.out.println("DEBUG_AS_LOGIN: AuthService.login() - Method Started. Attempting login for Email: [" + email + "], Password length: [" + (password != null ? password.length() : "null") + "]");
+
+        Optional<User> userOptional = userService.findUserByEmail(email); // GỌI TỪ UserService
 
         if (userOptional.isEmpty()) {
+            System.out.println("DEBUG_AS_LOGIN: User not found for email: [" + email + "] via UserService.");
             return AuthResult.failure("Incorrect email or password. Please try again.");
         }
 
         User user = userOptional.get();
+        System.out.println("DEBUG_AS_LOGIN: User found via UserService: [" + user.getEmail() + "]. Stored password hash: [" + user.getPasswordHash() + "]");
 
-        // Xác minh mật khẩu đã băm
-        if (PasswordUtils.verifyPassword(password, user.getPasswordHash())) { // SỬ DỤNG BCRYPT ĐỂ XÁC MINH
-            return AuthResult.success(user);
-        } else {
-            return AuthResult.failure("Incorrect email or password. Please try again.");
+        if (password == null || password.isEmpty()) {
+            System.out.println("DEBUG_AS_LOGIN: Input password is null or empty. Verification will fail.");
+            return AuthResult.failure("Password cannot be empty.");
         }
-    }
+        if (user.getPasswordHash() == null || user.getPasswordHash().isEmpty()) {
+            System.err.println("CRITICAL_AS_LOGIN: Stored password hash for user [" + user.getEmail() + "] is null or empty! Cannot verify.");
+            return AuthResult.failure("User account configuration error. Please contact support.");
+        }
 
-    private Optional<User> findUserByEmailInternal(String email) {
-        return userList.stream()
-                .filter(user -> user.getEmail().equalsIgnoreCase(email))
-                .findFirst();
-    }
+        System.out.println("DEBUG_AS_LOGIN: Verifying password: [length " + password.length() + "] against hash: [" + user.getPasswordHash() + "]");
+        try {
+            boolean passwordsMatch = PasswordUtils.verifyPassword(password, user.getPasswordHash());
+            System.out.println("DEBUG_AS_LOGIN: PasswordUtils.verifyPassword result for [" + user.getEmail() + "]: " + passwordsMatch);
 
-    public boolean isEmailTaken(String email) {
-        return findUserByEmailInternal(email).isPresent();
-    }
-
-    public boolean isUsernameTaken(String username) {
-        return userList.stream()
-                .anyMatch(user -> user.getUsername().equalsIgnoreCase(username));
+            if (passwordsMatch) {
+                System.out.println("DEBUG_AS_LOGIN: Password verification successful for " + user.getEmail());
+                return AuthResult.success(user);
+            } else {
+                System.out.println("DEBUG_AS_LOGIN: Password verification FAILED for " + user.getEmail());
+                return AuthResult.failure("Incorrect email or password. Please try again.");
+            }
+        } catch (Exception e) {
+            System.err.println("CRITICAL_AS_LOGIN: Exception during password verification for " + user.getEmail());
+            e.printStackTrace();
+            return AuthResult.failure("An internal error occurred during authentication. Please contact support.");
+        }
     }
 
     public AuthResult register(String username, String email, String rawPassword, User.Role role) {
-        if (isUsernameTaken(username)) {
+        System.out.println("DEBUG_AS_REGISTER: Attempting to register user. Email: [" + email + "], Username: [" + username + "]");
+
+        if (userService.isUsernameTaken(username)) { // GỌI TỪ UserService
+            System.out.println("DEBUG_AS_REGISTER: Username [" + username + "] already taken (checked via UserService).");
             return AuthResult.failure("Username already exists. Please choose another one.");
         }
-        if (isEmailTaken(email)) {
+        if (userService.isEmailTaken(email)) { // GỌI TỪ UserService
+            System.out.println("DEBUG_AS_REGISTER: Email [" + email + "] already taken (checked via UserService).");
             return AuthResult.failure("Email already registered. Please use a different email or login.");
         }
+        if (rawPassword == null || rawPassword.isEmpty()) {
+            System.out.println("DEBUG_AS_REGISTER: Registration failed - Raw password is empty.");
+            return AuthResult.failure("Password cannot be empty for registration.");
+        }
 
-        // Băm mật khẩu trước khi lưu
-        String hashedPassword = PasswordUtils.hashPassword(rawPassword); // SỬ DỤNG BCRYPT
+        String hashedPassword = null;
+        try {
+            hashedPassword = PasswordUtils.hashPassword(rawPassword);
+            System.out.println("DEBUG_AS_REGISTER: Password hashed for new user [" + email + "].");
+        } catch (Exception e) {
+            System.err.println("CRITICAL_AS_REGISTER: Exception while hashing password for new user [" + email + "]");
+            e.printStackTrace();
+            return AuthResult.failure("Error processing password during registration.");
+        }
 
-        User newUser = new User(username, email, hashedPassword, role); // LƯU MẬT KHẨU ĐÃ BĂM
-        userList.add(newUser);
-        System.out.println("New user registered: " + newUser.getEmail() + " with role " + role + " (password hashed)");
-        return AuthResult.success(newUser);
+        if (hashedPassword == null || hashedPassword.isEmpty()){
+            System.err.println("CRITICAL_AS_REGISTER: Hashed password is null or empty for new user [" + email + "]");
+            return AuthResult.failure("Failed to secure password during registration.");
+        }
+
+        User newUser = new User(username, email, hashedPassword, role);
+
+        boolean added = userService.addUser(newUser); // GỌI TỪ UserService
+        if (added) {
+            System.out.println("DEBUG_AS_REGISTER: New user registered successfully via UserService: " + newUser.getEmail() + " with role " + role);
+            return AuthResult.success(newUser);
+        } else {
+            System.err.println("ERROR_AS_REGISTER: Failed to add user via UserService for email: " + email);
+            return AuthResult.failure("Could not register user due to an internal issue or data conflict.");
+        }
     }
-
-    // Xóa bỏ lớp PasswordUtilsPlaceholder tĩnh nội bộ không còn cần thiết nữa
 }

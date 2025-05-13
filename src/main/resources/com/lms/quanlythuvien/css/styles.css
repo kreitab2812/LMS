@@ -1,0 +1,521 @@
+/* styles.css */
+.logo-text-splash-base { /* Class cơ sở chung nếu muốn */
+    -fx-font-family: "Arial Black", "Arial Bold", "Arial", sans-serif;
+    -fx-font-weight: bold;
+    -fx-font-size: 48px;
+}
+
+.logo-text-splash-uet {
+    -fx-font-family: "Arial Black", "Arial Bold", "Arial", sans-serif; /* Hoặc kế thừa từ base */
+    -fx-font-weight: bold;
+    -fx-font-size: 48px;
+    -fx-fill: #1d5193; /* Màu xanh UET */
+}
+
+.logo-text-splash-separator {
+    -fx-font-family: "Arial Black", "Arial Bold", "Arial", sans-serif;
+    -fx-font-weight: bold;
+    -fx-font-size: 48px;
+    -fx-fill: black;
+}
+
+.logo-text-splash-vnu {
+    -fx-font-family: "Arial Black", "Arial Bold", "Arial", sans-serif;
+    -fx-font-weight: bold;
+    -fx-font-size: 48px;
+    -fx-fill: #007e3f; /* Màu xanh lá VNU */
+}
+
+.logo-text-splash-library {
+    -fx-font-family: "Arial Black", "Arial Bold", "Arial", sans-serif;
+    -fx-font-weight: bold;
+    -fx-font-size: 48px;
+    -fx-fill: black;
+}
+
+/* Nếu cậu dùng Label "Đang tải..." */
+.splash-loading-label {
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 14px;
+    -fx-text-fill: #4A5568; /* Màu xám */
+}
+.root {
+    -fx-font-family: "Arial", sans-serif; /* Đặt Arial làm font mặc định */
+    -fx-font-size: 13.5px;
+    -fx-base: #f4f6f8; /* Màu nền chính của ứng dụng, có thể dùng cho StackPane gốc nếu muốn */
+}
+
+.label {
+    -fx-font-family: "Arial", sans-serif; /* Đảm bảo các label cũng dùng Arial */
+    -fx-text-fill: #2d3748; /* Màu chữ label chung */
+}
+
+/* Style cho các label của form (ví dụ: "Địa chỉ Email", "Mật khẩu") */
+.form-label {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold; /* Chữ đậm */
+    -fx-text-fill: #2d3748;
+}
+
+/* Style chung cho các ô nhập liệu */
+.form-input {
+    -fx-font-family: "Arial", sans-serif; /* Font Arial cho ô nhập liệu */
+    -fx-font-size: 14px;
+    -fx-pref-height: 38px; /* Chiều cao ô nhập liệu */
+    -fx-border-color: #cccccc;
+    -fx-border-width: 1px;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+    -fx-padding: 5px 10px;
+}
+
+.form-input:focused {
+    -fx-border-color: #537cac; /* Màu viền khi focus */
+    -fx-effect: dropshadow(gaussian, rgba(83,124,172,0.25), 6, 0, 0, 1); /* Đổ bóng nhẹ khi focus */
+}
+
+/* Nút bấm chính (ví dụ: Đăng nhập) */
+.primary-button {
+    -fx-background-color: #537cac; /* Màu xanh dương UET */
+    -fx-text-fill: white;
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5px;
+    -fx-padding: 10px 20px; /* Padding lớn hơn cho nút chính */
+    -fx-cursor: hand;
+}
+.primary-button:hover {
+    -fx-background-color: #436a9c; /* Màu đậm hơn khi hover */
+}
+.primary-button:disabled {
+    -fx-opacity: 0.65;
+}
+
+/* Label lỗi */
+.error-label {
+    -fx-text-fill: #D8000C; /* Màu đỏ đậm hơn cho lỗi */
+    -fx-font-size: 12.5px;
+    -fx-font-family: "Arial", sans-serif;
+    -fx-padding: 5px 0; /* Thêm chút padding cho dễ nhìn */
+}
+
+/* Link (ví dụ: Quên mật khẩu, Đăng ký tại đây) */
+.link-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #537cac; /* Màu xanh dương */
+    -fx-cursor: hand;
+    -fx-font-family: "Arial", sans-serif;
+}
+.link-label:hover {
+    -fx-underline: true;
+    -fx-text-fill: #436a9c; /* Đậm hơn khi hover */
+}
+/* styles.css */
+
+/* ... (các style .root, .form-label, .form-input, .primary-button đã có và dùng Arial) ... */
+
+/* Logo ở Top Bar */
+.logo-text-uet, .logo-text-vnu, .logo-text-separator, .logo-text-library-main {
+    -fx-font-family: "Arial Bold", "Arial", sans-serif; /* Hoặc Arial Black nếu muốn đậm hơn nữa */
+    -fx-font-weight: bold;
+    -fx-font-size: 20px; /* Giữ nguyên kích thước 20px như FXML cũ của cậu */
+}
+.logo-text-uet { -fx-fill: #1d5193; }
+.logo-text-vnu { -fx-fill: #007e3f; }
+.logo-text-separator { -fx-fill: black; }
+.logo-text-library-main { -fx-fill: black; }
+
+
+/* Menu Trái */
+.menu-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #4A5568;
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500; /* Hoặc normal nếu muốn thanh mảnh hơn */
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-alignment: baseline-left; /* Hoặc CENTER_LEFT nếu muốn icon và text cùng căn giữa theo chiều dọc */
+    -fx-padding: 10px 15px 10px 20px; /* Top Right Bottom Left - điều chỉnh padding trái cho icon */
+    -fx-graphic-text-gap: 10px; /* Khoảng cách giữa icon (emoji) và text */
+    -fx-cursor: hand;
+}
+
+.menu-button:hover {
+    -fx-background-color: #e9eff5; /* Màu nền xám rất nhạt khi hover */
+    -fx-text-fill: #2D3748;      /* Chữ đậm hơn một chút khi hover */
+}
+
+.menu-button.active { /* Style cho nút đang được chọn */
+    -fx-background-color: #537cac; /* Màu xanh dương chủ đạo */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    /* -fx-effect: dropshadow(gaussian, rgba(83,124,172,0.25), 5, 0, 0, 1); /* Thêm đổ bóng nhẹ nếu muốn */
+}
+
+/* Các style khác cho top bar (search, user info) giữ nguyên như cậu đã có */
+.primary-button-small {
+    /* ... (style của cậu) ... */
+    -fx-font-family: "Arial", sans-serif; /* Đảm bảo font */
+}
+.username-label-topbar {
+    /* ... (style của cậu) ... */
+    -fx-font-family: "Arial Bold", "Arial", sans-serif;
+}
+.datetime-label-topbar {
+    /* ... (style của cậu) ... */
+    -fx-font-family: "Arial", sans-serif;
+}
+/* styles.css */
+
+.root {
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 13.5px;
+    /* -fx-base: #f4f6f8; */ /* Màu nền chung cho các view nếu cần */
+}
+
+.view-title {
+    -fx-font-family: "Arial Bold", "Arial", sans-serif; /* Hoặc chỉ "Arial" nếu muốn mảnh hơn */
+    -fx-font-size: 22px;  /* Kích thước tiêu đề view */
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50; /* Màu chữ tiêu đề */
+    -fx-padding: 0 0 10px 0; /* Padding dưới tiêu đề */
+}
+
+.form-input {
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 13px; /* Font cho ô tìm kiếm */
+    -fx-pref-height: 35px;
+    -fx-border-color: #cccccc;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px; /* Bo góc nhẹ */
+    -fx-background-radius: 4px;
+    -fx-padding: 5px 8px;
+}
+.form-input:focused {
+    -fx-border-color: #537cac;
+    -fx-effect: dropshadow(gaussian, rgba(83,124,172,0.25), 5, 0, 0, 1);
+}
+
+.primary-button {
+    -fx-background-color: #537cac;
+    -fx-text-fill: white;
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 13px; /* Kích thước chữ cho nút */
+    -fx-font-weight: bold;
+    -fx-background-radius: 4px;
+    -fx-padding: 8px 15px;
+    -fx-cursor: hand;
+}
+.primary-button:hover {
+    -fx-background-color: #436a9c;
+}
+.primary-button:disabled {
+    -fx-opacity: 0.65;
+}
+
+.secondary-button {
+    -fx-background-color: #6c757d; /* Màu xám cho nút phụ */
+    -fx-text-fill: white;
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 4px;
+    -fx-padding: 8px 15px;
+    -fx-cursor: hand;
+}
+.secondary-button:hover {
+    -fx-background-color: #5a6268;
+}
+.secondary-button:disabled {
+    -fx-opacity: 0.65;
+}
+
+.danger-button {
+    -fx-background-color: #dc3545; /* Màu đỏ cho nút nguy hiểm */
+    -fx-text-fill: white;
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 4px;
+    -fx-padding: 8px 15px;
+    -fx-cursor: hand;
+}
+.danger-button:hover {
+    -fx-background-color: #c82333;
+}
+.danger-button:disabled {
+    -fx-opacity: 0.65;
+}
+
+.primary-button-small { /* Dùng cho nút Search nhỏ ở cuối HBox */
+    -fx-background-color: #537cac;
+    -fx-text-fill: white;
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-weight: bold;
+    -fx-background-radius: 4px; /* Đồng bộ bo góc */
+    -fx-font-size: 13px;
+    -fx-padding: 7px 12px; /* Điều chỉnh padding cho phù hợp với chiều cao form-input */
+    -fx-cursor: hand;
+}
+.primary-button-small:hover {
+    -fx-background-color: #436a9c;
+}
+
+
+/* Style cho TableView (giống như đã có trong styles.css cậu gửi trước) */
+.table-view .column-header-background {
+    -fx-background-color: #e9eff5; /* Màu nền cho header cột */
+}
+.table-view .column-header .label {
+    -fx-text-fill: #2c3e50; /* Màu chữ cho header cột */
+    -fx-font-family: "Arial Bold", "Arial", sans-serif;
+    -fx-font-size: 13px;
+    -fx-padding: 8px;
+}
+.table-view .table-cell {
+    -fx-padding: 6px 8px; /* Padding cho cell */
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 13px;
+}
+/* Placeholder text style for TableView */
+.table-view .placeholder .label {
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 14px;
+    -fx-text-fill: #718096; /* Màu xám nhạt */
+}
+/* --- Logo TextFlow --- */
+.logo-text-uet, .logo-text-vnu, .logo-text-separator, .logo-text-library-main {
+    /* -fx-font-family: "Arial Black", "Arial Bold", "Arial", sans-serif; /* Có thể dùng Arial Black hoặc Bold */
+    -fx-font-family: "Arial Bold", "Arial", sans-serif; /* Ưu tiên Arial Bold */
+    -fx-font-weight: bold; /* Đảm bảo đậm nếu Arial Bold không có sẵn */
+    -fx-font-size: 34px; /* Có thể điều chỉnh lại kích thước */
+}
+.logo-text-uet { -fx-fill: #1d5193; }
+.logo-text-vnu { -fx-fill: #007e3f; }
+.logo-text-separator { -fx-fill: black; }
+.logo-text-library-main { -fx-fill: black; } /* Cho chữ "Library" to */
+
+/* --- Các style class cậu đã có cho các phần khác --- */
+.primary-button-small {
+    /* Giữ nguyên hoặc điều chỉnh cho đồng bộ với .primary-button */
+    -fx-background-color: #537cac;
+    -fx-text-fill: white;
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-weight: bold;
+    -fx-background-radius: 15px; /* Bo góc tròn hơn */
+    -fx-font-size: 12.5px;
+    -fx-padding: 5px 12px;
+    -fx-cursor: hand;
+}
+.primary-button-small:hover {
+    -fx-background-color: #436a9c;
+}
+.root {
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 13.5px;
+    -fx-base: #f4f6f8;
+}
+
+.label {
+    -fx-font-family: "Arial", sans-serif;
+    -fx-text-fill: #2d3748; /* Xám đậm hơn cho dễ đọc */
+}
+
+.button {
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 13.5px;
+    -fx-cursor: hand;
+}
+
+.text-field {
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 13px;
+}
+
+.combo-box {
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 12.5px;
+}
+.combo-box .list-cell {
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 12.5px;
+}
+
+/* --- Top Bar in AdminDashboard --- */
+.primary-button-small {
+    -fx-background-color: #537cac;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 15px;
+    -fx-font-size: 12.5px;
+    -fx-padding: 5px 12px;
+}
+.primary-button-small:hover {
+    -fx-background-color: #436a9c;
+}
+
+.username-label-topbar {
+    -fx-font-family: "Arial Bold", "Arial", sans-serif;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-text-fill: #1a202c;
+}
+.datetime-label-topbar {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: #718096;
+}
+
+
+/* --- Left Menu in AdminDashboard --- */
+.menu-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #4A5568;
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 14px; /* Kích thước font menu */
+    -fx-font-weight: 500;
+    -fx-border-radius: 0;
+    -fx-background-radius: 0;
+    -fx-alignment: baseline-left;
+    -fx-padding: 12px 15px 12px 25px; /* Giảm padding trái một chút */
+    -fx-pref-width: 210px; /* Khớp với prefWidth của VBox menu */
+}
+.menu-button:hover {
+    -fx-background-color: #e9eff5;
+    -fx-text-fill: #2c5282;
+}
+.menu-button.active {
+    -fx-background-color: #537cac;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+/* --- HomeView Specific Styles (Phiên bản tối giản) --- */
+.home-greeting-title {
+    -fx-font-family: "Arial Black", "Arial Bold", sans-serif;
+    -fx-font-size: 30px; /* Điều chỉnh kích thước */
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+}
+
+.home-quote-card {
+    -fx-background-color: #ffffff;
+    -fx-padding: 25px 35px; /* Tăng padding */
+    -fx-background-radius: 10px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.07), 12, 0.3, 1, 2);
+    -fx-alignment: center;
+    -fx-max-width: 680px;
+    -fx-min-height: 160px; /* Điều chỉnh min-height */
+}
+
+.home-quote-card-title {
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #537cac;
+    -fx-padding: 0 0 12px 0;
+}
+
+.home-quote-card-text {
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 17px; /* Tăng kích thước quote */
+    -fx-font-style: italic;
+    -fx-text-fill: #2d3748;
+    -fx-line-spacing: 4.5px; /* Tăng giãn dòng */
+}
+
+.home-quote-card-author {
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 14.5px; /* Tăng kích thước */
+    -fx-font-weight: normal;
+    -fx-text-fill: #718096;
+    -fx-padding: 10px 0 0 0;
+}
+
+/* Style cho các item sách (Dùng cho kết quả Search) */
+.book-item-pane {
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 1px;
+    -fx-background-color: white;
+    -fx-pref-width: 140px;
+    -fx-min-height: 220px; /* Giữ nguyên hoặc điều chỉnh lại cho phù hợp với ảnh 130x85 */
+    -fx-pref-height: 220px;
+    -fx-alignment: top-center;
+    -fx-padding: 10px;
+    -fx-background-radius: 6px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8, 0.2, 0, 1);
+}
+
+.book-item-title {
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-weight: bold;
+    -fx-font-size: 11.5px; /* Điều chỉnh nếu cần */
+    -fx-text-alignment: center;
+    -fx-text-fill: #2c3e50;
+    -fx-min-height: 30px;
+}
+
+.book-item-author {
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 10.5px; /* Điều chỉnh nếu cần */
+    -fx-text-alignment: center;
+    -fx-text-fill: #4a5568;
+    -fx-min-height: 15px;
+}
+/* styles.css (Thêm vào cuối hoặc chỗ phù hợp) */
+
+.view-title {
+    -fx-font-family: "Arial Bold", "Arial", sans-serif;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+    -fx-padding: 5px 0 10px 0;
+}
+
+.secondary-button {
+    -fx-background-color: #6c757d; /* Màu xám */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 4px;
+    -fx-font-size: 13px;
+    -fx-padding: 5px 10px;
+}
+.secondary-button:hover {
+    -fx-background-color: #5a6268;
+}
+.secondary-button:disabled {
+    -fx-opacity: 0.6;
+}
+
+
+.danger-button {
+    -fx-background-color: #dc3545; /* Màu đỏ */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 4px;
+    -fx-font-size: 13px;
+    -fx-padding: 5px 10px;
+}
+.danger-button:hover {
+    -fx-background-color: #c82333;
+}
+.danger-button:disabled {
+    -fx-opacity: 0.6;
+}
+
+/* Style cho TableView (tùy chọn) */
+.table-view .column-header-background {
+    -fx-background-color: #e9eff5; /* Màu nền cho header cột */
+}
+.table-view .column-header .label {
+    -fx-text-fill: #2c3e50; /* Màu chữ cho header cột */
+    -fx-font-family: "Arial Bold", "Arial", sans-serif;
+    -fx-font-size: 13px;
+    -fx-padding: 8px;
+}
+.table-view .table-cell {
+    -fx-padding: 6px 8px; /* Padding cho cell */
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 13px;
+}

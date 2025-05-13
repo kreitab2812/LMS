@@ -1,13 +1,16 @@
-package com.lms.quanlythuvien.controllers; // Package của Controller
+package com.lms.quanlythuvien.controllers; // Giữ nguyên package của cậu
 
 import com.lms.quanlythuvien.MainApp;
 import com.lms.quanlythuvien.models.User;
 import com.lms.quanlythuvien.services.AuthService;
-import com.lms.quanlythuvien.services.AuthResult; // IMPORT CHO AUTHRESULT ĐÚNG VỊ TRÍ MỚI
+import com.lms.quanlythuvien.services.AuthResult;
+import com.lms.quanlythuvien.services.UserService; // THÊM IMPORT NÀY
 
+import javafx.event.ActionEvent; // Kiểm tra xem có dùng ActionEvent không cho handleLoginButtonAction
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
+// import javafx.scene.control.Alert; // Bỏ comment nếu cậu có dùng Alert ở đâu đó trong các hàm private
+import javafx.scene.control.Button; // Giữ lại nếu FXML có Button với fx:id, dù không dùng trong code này
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
@@ -15,6 +18,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 
+import java.io.InputStream;
 import java.net.URL;
 import java.util.ResourceBundle;
 
@@ -30,12 +34,13 @@ public class LoginScreenController implements Initializable {
     private ImageView togglePasswordVisibility;
     @FXML
     private Label errorLabel;
-    // @FXML private Button loginButton; // Không cần nếu chỉ dùng onAction trong FXML
     @FXML
     private Label forgotPasswordLink;
     @FXML
     private Label registerHereLink;
 
+    // Khai báo các Service
+    private UserService userService; // KHAI BÁO UserService
     private AuthService authService;
 
     private Image eyeIcon;
@@ -44,40 +49,67 @@ public class LoginScreenController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        authService = new AuthService(); // Khởi tạo AuthService
+        System.out.println("DEBUG_LSC_INIT: LoginScreenController initialize() started.");
+
+        // KHỞI TẠO UserService TRƯỚC
+        userService = new UserService();
+        System.out.println("DEBUG_LSC_INIT: UserService instantiated.");
+
+        // SAU ĐÓ KHỞI TẠO AuthService VÀ TRUYỀN userService VÀO
+        authService = new AuthService(userService);
+        System.out.println("DEBUG_LSC_INIT: AuthService instantiated (with UserService).");
 
         // Tải icons
         try {
-            // Đảm bảo đường dẫn đúng đến thư mục images trong resources của bạn
             String eyeIconPath = "/com/lms/quanlythuvien/images/eye_icon.png";
             String eyeSlashIconPath = "/com/lms/quanlythuvien/images/eye_slash_icon.png";
 
-            eyeIcon = new Image(getClass().getResourceAsStream(eyeIconPath));
-            eyeSlashIcon = new Image(getClass().getResourceAsStream(eyeSlashIconPath));
+            System.out.println("DEBUG_LSC_INIT: Attempting to load eye icons...");
+            InputStream eyeStream = getClass().getResourceAsStream(eyeIconPath);
+            InputStream eyeSlashStream = getClass().getResourceAsStream(eyeSlashIconPath);
 
-            if (eyeIcon.isError() || eyeSlashIcon.isError()) {
-                System.err.println("LoginScreen: Error loading eye icons. Check paths.");
+            if (eyeStream != null) {
+                eyeIcon = new Image(eyeStream);
+                System.out.println("DEBUG_LSC_INIT: eye_icon.png loaded successfully.");
             } else {
-                togglePasswordVisibility.setImage(eyeSlashIcon); // Mặc định là ẩn
+                System.err.println("ERROR_LSC_INIT: Failed to load eye_icon.png. Path or file incorrect: " + eyeIconPath);
             }
+
+            if (eyeSlashStream != null) {
+                eyeSlashIcon = new Image(eyeSlashStream);
+                System.out.println("DEBUG_LSC_INIT: eye_slash_icon.png loaded successfully.");
+            } else {
+                System.err.println("ERROR_LSC_INIT: Failed to load eye_slash_icon.png. Path or file incorrect: " + eyeSlashIconPath);
+            }
+
+            if (togglePasswordVisibility != null && eyeSlashIcon != null && !eyeSlashIcon.isError()) {
+                togglePasswordVisibility.setImage(eyeSlashIcon);
+            } else {
+                System.err.println("ERROR_LSC_INIT: togglePasswordVisibility ImageView is null or eyeSlashIcon is null/error. Cannot set default toggle image.");
+            }
+
         } catch (Exception e) {
-            System.err.println("LoginScreen: Exception loading eye icons: " + e.getMessage());
+            System.err.println("CRITICAL_LSC_INIT: Exception during eye icon loading in LoginScreenController:");
+            e.printStackTrace();
         }
 
-        // Setup ban đầu cho trường mật khẩu
         setupPasswordFieldVisibility(false);
         bindPasswordFields();
-
-        // Ẩn errorLabel ban đầu
         clearError();
+        System.out.println("DEBUG_LSC_INIT: LoginScreenController initialize() finished.");
     }
 
     private void bindPasswordFields() {
+        // Đồng bộ giá trị giữa visiblePasswordField và passwordField
         visiblePasswordField.textProperty().addListener((obs, oldText, newText) -> {
-            if (isPasswordVisible) passwordField.setText(newText);
+            if (isPasswordVisible) { // Chỉ cập nhật passwordField nếu visiblePasswordField đang active
+                passwordField.setText(newText);
+            }
         });
         passwordField.textProperty().addListener((obs, oldText, newText) -> {
-            if (!isPasswordVisible) visiblePasswordField.setText(newText);
+            if (!isPasswordVisible) { // Chỉ cập nhật visiblePasswordField nếu passwordField đang active
+                visiblePasswordField.setText(newText);
+            }
         });
     }
 
@@ -88,89 +120,144 @@ public class LoginScreenController implements Initializable {
             passwordField.setVisible(false);
             visiblePasswordField.setManaged(true);
             visiblePasswordField.setVisible(true);
-            if (eyeIcon != null && !eyeIcon.isError()) togglePasswordVisibility.setImage(eyeIcon);
+            // visiblePasswordField.setText(passwordField.getText()); // Chuyển text khi đổi trạng thái
+            if (togglePasswordVisibility != null && eyeIcon != null && !eyeIcon.isError()) {
+                togglePasswordVisibility.setImage(eyeIcon);
+            } else {
+                System.err.println("DEBUG_LSC_VISIBILITY: eyeIcon is null or error, or toggleImageView is null. Cannot set visible toggle image.");
+            }
         } else {
             visiblePasswordField.setManaged(false);
             visiblePasswordField.setVisible(false);
             passwordField.setManaged(true);
             passwordField.setVisible(true);
-            if (eyeSlashIcon != null && !eyeSlashIcon.isError()) togglePasswordVisibility.setImage(eyeSlashIcon);
+            // passwordField.setText(visiblePasswordField.getText()); // Chuyển text khi đổi trạng thái
+            if (togglePasswordVisibility != null && eyeSlashIcon != null && !eyeSlashIcon.isError()) {
+                togglePasswordVisibility.setImage(eyeSlashIcon);
+            } else {
+                System.err.println("DEBUG_LSC_VISIBILITY: eyeSlashIcon is null or error, or toggleImageView is null. Cannot set hidden toggle image.");
+            }
         }
     }
 
     @FXML
-    private void togglePasswordVisibilityClicked(MouseEvent event) { // Đổi tên phương thức này cho rõ ràng
-        setupPasswordFieldVisibility(!isPasswordVisible); // Đảo ngược trạng thái hiện tại
+    private void togglePasswordVisibilityClicked(MouseEvent event) {
+        System.out.println("DEBUG_LSC: togglePasswordVisibilityClicked - Method Started.");
+        isPasswordVisible = !isPasswordVisible; // Đảo trạng thái trước
+        setupPasswordFieldVisibility(isPasswordVisible); // Cập nhật UI dựa trên trạng thái mới
+
+        // Đồng bộ text và focus sau khi thay đổi visibility
         if(isPasswordVisible) {
-            visiblePasswordField.setText(passwordField.getText());
+            visiblePasswordField.setText(passwordField.getText()); // Đảm bảo text được chuyển
             visiblePasswordField.requestFocus();
-            visiblePasswordField.end(); // Di chuyển con trỏ về cuối
+            if (visiblePasswordField.getText() != null) visiblePasswordField.end();
         } else {
-            passwordField.setText(visiblePasswordField.getText());
+            passwordField.setText(visiblePasswordField.getText()); // Đảm bảo text được chuyển
             passwordField.requestFocus();
-            passwordField.end();
+            if (passwordField.getText() != null) passwordField.end();
         }
+        System.out.println("DEBUG_LSC: togglePasswordVisibilityClicked - Method Finished. isPasswordVisible: " + isPasswordVisible);
     }
 
     @FXML
     private void handleLoginButtonAction() {
+        System.out.println("DEBUG_LSC_LOGIN: handleLoginButtonAction - Method Started.");
+
         String email = emailField.getText().trim();
         String password = isPasswordVisible ? visiblePasswordField.getText() : passwordField.getText();
 
         clearError();
+        System.out.println("DEBUG_LSC_LOGIN: Error cleared. Email: [" + email + "], Password length: [" + password.length() + "]");
 
         if (email.isEmpty() && password.isEmpty()) {
             showError("Email and Password are required.");
+            System.out.println("DEBUG_LSC_LOGIN: Validation failed - Email and Password empty.");
             return;
         }
         if (email.isEmpty()) {
             showError("Email cannot be empty.");
+            System.out.println("DEBUG_LSC_LOGIN: Validation failed - Email empty.");
             return;
         }
         if (password.isEmpty()) {
             showError("Password cannot be empty.");
+            System.out.println("DEBUG_LSC_LOGIN: Validation failed - Password empty.");
             return;
         }
-        if (!email.contains("@")) { // Kiểm tra email đơn giản
-            showError("Invalid email format. Please include '@'.");
+        if (!email.contains("@") || !email.matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
+            showError("Invalid email format.");
+            System.out.println("DEBUG_LSC_LOGIN: Validation failed - Invalid email format.");
             return;
         }
 
-        AuthResult authResult = authService.login(email, password); // Sử dụng AuthResult ở đây
+        System.out.println("DEBUG_LSC_LOGIN: Basic validations passed.");
 
-        if (authResult.isSuccess()) { // Sử dụng isSuccess()
-            User loggedInUser = authResult.user(); // SỬA THÀNH .user()
-            System.out.println("Login successful! User: " + loggedInUser.getUsername() + ", Role: " + loggedInUser.getRole());
-            // TODO: Chuyển sang màn hình tương ứng với vai trò
-            if (loggedInUser.getRole() == User.Role.ADMIN) {
-                MainApp.loadScene("AdminDashboard.fxml"); // Tên FXML ví dụ
-            } else {
-                MainApp.loadScene("UserDashboard.fxml"); // Tên FXML ví dụ
+        if (authService == null) {
+            System.err.println("CRITICAL_LSC_LOGIN: authService is NULL!");
+            showError("System error: Authentication service not available. Please restart the application.");
+            return;
+        }
+        System.out.println("DEBUG_LSC_LOGIN: authService is not null. Calling authService.login()...");
+
+        AuthResult authResult = authService.login(email, password);
+
+        if (authResult == null) {
+            System.err.println("CRITICAL_LSC_LOGIN: authResult from authService.login() is NULL!");
+            showError("Critical system error during login. AuthResult is null.");
+            return;
+        }
+
+        System.out.println("DEBUG_LSC_LOGIN: Returned from authService.login(). AuthResult isSuccess: " + authResult.isSuccess() + ", User: [" + (authResult.user() != null ? authResult.user().getUsername() : "null") + "], Msg: [" + authResult.errorMessage() + "]");
+
+        if (authResult.isSuccess()) {
+            User loggedInUser = authResult.user();
+            if (loggedInUser == null) {
+                System.err.println("CRITICAL_LSC_LOGIN: Login reported success but user object is NULL!");
+                showError("Login successful but user data is missing.");
+                return;
             }
+            System.out.println("DEBUG_LSC_LOGIN: Login successful! User: " + loggedInUser.getUsername() + ", Role: " + loggedInUser.getRole());
+            System.out.println("DEBUG_LSC_LOGIN: Attempting to load scene for role: " + loggedInUser.getRole());
+            if (loggedInUser.getRole() == User.Role.ADMIN) {
+                MainApp.loadScene("AdminDashboard.fxml");
+            } else {
+                MainApp.loadScene("UserDashboard.fxml"); // Hoặc một FXML khác cho user thường
+            }
+            System.out.println("DEBUG_LSC_LOGIN: MainApp.loadScene method called.");
         } else {
-            showError(authResult.errorMessage()); // SỬA THÀNH .errorMessage()
+            System.out.println("DEBUG_LSC_LOGIN: Login failed. Displaying error: " + authResult.errorMessage());
+            showError(authResult.errorMessage());
         }
+        System.out.println("DEBUG_LSC_LOGIN: handleLoginButtonAction - Method Finished.");
     }
 
     @FXML
     private void handleForgotPasswordLinkClick(MouseEvent event) {
+        System.out.println("DEBUG_LSC: ForgotPasswordLink clicked.");
         MainApp.loadScene("ForgotPasswordScreen.fxml");
     }
 
     @FXML
     private void handleRegisterHereLinkClick(MouseEvent event) {
+        System.out.println("DEBUG_LSC: RegisterHereLink clicked.");
         MainApp.loadScene("RegistrationScreen.fxml");
     }
 
     private void showError(String message) {
-        errorLabel.setText(message);
-        errorLabel.setVisible(true);
-        errorLabel.setManaged(true);
+        if (errorLabel != null) {
+            errorLabel.setText(message);
+            errorLabel.setVisible(true);
+            errorLabel.setManaged(true);
+        } else {
+            System.err.println("ERROR_LSC_SHOW_ERROR: errorLabel is null! Cannot display message: " + message);
+        }
     }
 
     private void clearError() {
-        errorLabel.setText("");
-        errorLabel.setVisible(false);
-        errorLabel.setManaged(false);
+        if (errorLabel != null) {
+            errorLabel.setText("");
+            errorLabel.setVisible(false);
+            errorLabel.setManaged(false);
+        }
     }
 }
