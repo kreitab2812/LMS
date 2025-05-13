@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+<?import javafx.scene.text.TextFlow?>
+
+<StackPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.lms.quanlythuvien.controllers.RegistrationSuccessfulScreenController"
+           prefHeight="500.0" prefWidth="700.0" style="-fx-background-color: white;">
+    <children>
+        <VBox alignment="CENTER" spacing="15.0" maxWidth="450.0">
+            <padding>
+                <Insets top="30.0" right="40.0" bottom="30.0" left="40.0"/>
+            </padding>
+
+            <children>
+                <TextFlow textAlignment="CENTER">
+                    <Text text="UET" fill="#1d5193">
+                        <font><Font name="Comfortaa Regular" size="32.0"/></font>
+                    </Text>
+                    <Text text="-" fill="black">
+                        <font><Font name="Comfortaa Regular" size="32.0"/></font>
+                    </Text>
+                    <Text text="VNU" fill="#007e3f">
+                        <font><Font name="Comfortaa Regular" size="32.0"/></font>
+                    </Text>
+                </TextFlow>
+                <Text text="Library" fill="black" textAlignment="CENTER">
+                    <font><Font name="Comfortaa Regular" size="32.0"/></font>
+                    <VBox.margin>
+                        <Insets bottom="20.0"/>
+                    </VBox.margin>
+                </Text>
+
+                <Label text="Registration Successful!"
+                       style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #28a745;"> <VBox.margin>
+                    <Insets bottom="5.0"/>
+                </VBox.margin>
+                </Label>
+
+                <Label text="Thank you for registering."
+                       style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
+                <Label text="Your account has been successfully created."
+                       style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
+
+                <ImageView fitHeight="80.0" fitWidth="80.0" pickOnBounds="true" preserveRatio="true">
+                    <image>
+                        <Image url="@../images/green_tick_icon.png"/>
+                    </image>
+                    <VBox.margin>
+                        <Insets top="15.0" bottom="15.0"/>
+                    </VBox.margin>
+                </ImageView>
+
+                <Button fx:id="loginButton" text="Proceed to Login"
+                        style="-fx-background-color: #537cac; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-background-radius: 5;"
+                        prefWidth="Infinity" onAction="#handleLoginButtonAction">
+                    <VBox.margin>
+                        <Insets top="10.0"/>
+                    </VBox.margin>
+                </Button>
+            </children>
+        </VBox>
+    </children>
+</StackPane>
