@@ -52,7 +52,7 @@ public class LoginScreenController implements Initializable {
         System.out.println("DEBUG_LSC_INIT: LoginScreenController initialize() started.");
 
         // KHỞI TẠO UserService TRƯỚC
-        userService = new UserService();
+        userService = UserService.getInstance();
         System.out.println("DEBUG_LSC_INIT: UserService instantiated.");
 
         // SAU ĐÓ KHỞI TẠO AuthService VÀ TRUYỀN userService VÀO

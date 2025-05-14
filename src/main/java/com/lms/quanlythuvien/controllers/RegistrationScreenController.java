@@ -61,7 +61,7 @@ public class RegistrationScreenController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         System.out.println("DEBUG_RSC_INIT: RegistrationScreenController initialize() started.");
         // KHỞI TẠO UserService TRƯỚC
-        userService = new UserService();
+        userService = UserService.getInstance();
         System.out.println("DEBUG_RSC_INIT: UserService instantiated.");
 
         // SAU ĐÓ KHỞI TẠO AuthService VÀ TRUYỀN userService VÀO

@@ -7,13 +7,11 @@ import com.lms.quanlythuvien.models.User;
 import com.lms.quanlythuvien.services.BookManagementService;
 import com.lms.quanlythuvien.services.BorrowingRecordService;
 import com.lms.quanlythuvien.services.UserService;
+// import com.lms.quanlythuvien.utils.PasswordUtils; // Không cần trực tiếp trong controller này
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.ArrayList;
 import javafx.collections.transformation.FilteredList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -21,6 +19,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+// import javafx.scene.control.Dialog; // Không thấy dùng Dialog<User> ở đây
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -28,12 +27,21 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.util.Callback;
+// import javafx.scene.Node; // Không thấy dùng Node trực tiếp
+// import javafx.scene.control.TextInputDialog; // Không thấy dùng
+// import javafx.scene.control.ComboBox; // Không thấy dùng
+// import javafx.scene.layout.GridPane; // Không thấy dùng
+// import javafx.scene.layout.VBox; // Không thấy dùng VBox khai báo ở đây
+// import javafx.application.Platform; // Không thấy dùng Platform trực tiếp
+// import javafx.geometry.Insets; // Không thấy dùng Insets trực tiếp
 
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.stream.Collectors;
 
 public class LoanManagementController implements Initializable {
 
@@ -53,11 +61,11 @@ public class LoanManagementController implements Initializable {
     @FXML private TableColumn<BorrowingRecord, LocalDate> loanBorrowDateColumn;
     @FXML private TableColumn<BorrowingRecord, LocalDate> loanDueDateColumn;
     @FXML private TableColumn<BorrowingRecord, LoanStatus> loanStatusColumn;
-    @FXML private TableColumn<BorrowingRecord, Void> loanActionColumn; // Cột cho nút "Trả sách"
-    @FXML private Button returnBookButton; // Nút trả sách chung (nếu không dùng nút trên từng dòng)
+    @FXML private TableColumn<BorrowingRecord, Void> loanActionColumn;
+    @FXML private Button returnBookButton;
     //</editor-fold>
 
-    // Services
+    // Services - Sử dụng Singleton
     private BookManagementService bookManagementService;
     private UserService userService;
     private BorrowingRecordService borrowingRecordService;
@@ -66,7 +74,7 @@ public class LoanManagementController implements Initializable {
     private ObservableList<BorrowingRecord> observableLoanList;
     private FilteredList<BorrowingRecord> filteredLoanList;
 
-    // Selected items for borrowing
+    // Selected items for borrowing/returning
     private User selectedUserForLoan;
     private Book selectedBookForLoan;
     private BorrowingRecord selectedLoanForReturn;
@@ -74,37 +82,44 @@ public class LoanManagementController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // Khởi tạo các services
-        bookManagementService = new BookManagementService();
-        userService = new UserService();
-        borrowingRecordService = new BorrowingRecordService();
+        System.out.println("DEBUG_LMC_INIT: LoanManagementController initialize() started.");
+        // LẤY INSTANCE SINGLETON CỦA CÁC SERVICE
+        bookManagementService = BookManagementService.getInstance();
+        userService = UserService.getInstance();
+        borrowingRecordService = BorrowingRecordService.getInstance();
+        System.out.println("DEBUG_LMC_INIT: Services retrieved/instantiated.");
+        System.out.println("DEBUG_LMC_INIT: BookManagementService instance: " + bookManagementService.hashCode());
+        System.out.println("DEBUG_LMC_INIT: UserService instance: " + userService.hashCode());
+        System.out.println("DEBUG_LMC_INIT: BorrowingRecordService instance: " + borrowingRecordService.hashCode());
 
-        // Khởi tạo danh sách cho TableView
+        // (Quan trọng) Gọi initializeSampleData cho BorrowingRecordService nếu muốn có dữ liệu mẫu
+        // và đảm bảo nó chỉ chạy một lần khi cần (ví dụ, khi danh sách rỗng)
+        // Điều này nên được gọi sau khi tất cả các service liên quan (BMS, US) đã được getInstance()
+        // để đảm bảo chúng sẵn sàng nếu initializeSampleData() của BRS cần đến chúng.
+        // borrowingRecordService.initializeSampleData(); // Bỏ comment nếu muốn dữ liệu mẫu ở đây
+
         observableLoanList = FXCollections.observableArrayList();
-        // TODO: Tải danh sách các lượt mượn đang hoạt động ban đầu
-        // loadActiveLoans(); // Sẽ tạo phương thức này sau
 
-        // Thiết lập các cột cho TableView
         setupActiveLoansTableColumns();
 
-        // Thiết lập listener cho việc chọn dòng trong TableView (nếu dùng nút trả sách chung)
         activeLoansTableView.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             selectedLoanForReturn = newSelection;
-            returnBookButton.setDisable(newSelection == null || newSelection.getStatus() == LoanStatus.RETURNED);
+            if (returnBookButton != null) { // Kiểm tra null cho FXML component
+                returnBookButton.setDisable(newSelection == null || newSelection.getStatus() == LoanStatus.RETURNED);
+            }
         });
 
-        // (Tùy chọn) Listener cho ô lọc danh sách mượn
-        activeLoansFilterField.textProperty().addListener((observable, oldValue, newValue) -> {
-            filterActiveLoansTable(newValue);
-        });
+        if (activeLoansFilterField != null) { // Kiểm tra null
+            activeLoansFilterField.textProperty().addListener((observable, oldValue, newValue) -> {
+                filterActiveLoansTable(newValue);
+            });
+        }
 
-        // Vô hiệu hóa nút "Cho Mượn Sách" ban đầu
-        borrowBookButton.setDisable(true);
-        // Vô hiệu hóa nút "Trả Sách" chung ban đầu
-        returnBookButton.setDisable(true);
+        if (borrowBookButton != null) borrowBookButton.setDisable(true);
+        if (returnBookButton != null) returnBookButton.setDisable(true);
 
-        // Tải dữ liệu ban đầu cho bảng
-        loadActiveLoans();
+        loadActiveLoans(); // Tải dữ liệu ban đầu cho bảng
+        System.out.println("DEBUG_LMC_INIT: LoanManagementController initialize() finished.");
     }
 
     private void setupActiveLoansTableColumns() {
@@ -113,58 +128,60 @@ public class LoanManagementController implements Initializable {
         loanDueDateColumn.setCellValueFactory(new PropertyValueFactory<>("dueDate"));
         loanStatusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
 
-        // Cột hiển thị Tiêu đề Sách (cần lấy từ bookId)
         loanBookTitleColumn.setCellValueFactory(cellData -> {
-            String bookId = cellData.getValue().getBookId();
-            Optional<Book> bookOpt = bookManagementService.findBookByIdInLibrary(bookId);
-            return new SimpleStringProperty(bookOpt.map(Book::getTitle).orElse("Không rõ sách"));
+            BorrowingRecord record = cellData.getValue();
+            if (record != null && bookManagementService != null) {
+                Optional<Book> bookOpt = bookManagementService.findBookByIdInLibrary(record.getBookId());
+                return new SimpleStringProperty(bookOpt.map(Book::getTitle).orElse("Không rõ sách"));
+            }
+            return new SimpleStringProperty("");
         });
 
-        // Cột hiển thị Tên Người Mượn (cần lấy từ userId)
         loanUserNameColumn.setCellValueFactory(cellData -> {
-            String userId = cellData.getValue().getUserId();
-            Optional<User> userOpt = userService.findUserById(userId);
-            return new SimpleStringProperty(userOpt.map(User::getUsername).orElse("Không rõ người dùng"));
+            BorrowingRecord record = cellData.getValue();
+            if (record != null && userService != null) {
+                Optional<User> userOpt = userService.findUserById(record.getUserId());
+                return new SimpleStringProperty(userOpt.map(User::getUsername).orElse("Không rõ người dùng"));
+            }
+            return new SimpleStringProperty("");
         });
 
-        // Cột Hành Động (chứa nút "Trả Sách" cho mỗi dòng)
-        Callback<TableColumn<BorrowingRecord, Void>, TableCell<BorrowingRecord, Void>> cellFactory = new Callback<>() {
-            @Override
-            public TableCell<BorrowingRecord, Void> call(final TableColumn<BorrowingRecord, Void> param) {
-                final TableCell<BorrowingRecord, Void> cell = new TableCell<>() {
-                    private final Button btnReturn = new Button("Trả Sách");
-                    {
-                        btnReturn.getStyleClass().add("secondary-button"); // Hoặc "danger-button"
-                        btnReturn.setOnAction((ActionEvent event) -> {
-                            BorrowingRecord record = getTableView().getItems().get(getIndex());
-                            handleReturnBookFromTableRowAction(record);
-                        });
-                    }
+        Callback<TableColumn<BorrowingRecord, Void>, TableCell<BorrowingRecord, Void>> cellFactory = param -> {
+            final TableCell<BorrowingRecord, Void> cell = new TableCell<>() {
+                private final Button btnReturn = new Button("Trả Sách");
+                {
+                    btnReturn.getStyleClass().add("secondary-button");
+                    btnReturn.setOnAction((ActionEvent event) -> {
+                        BorrowingRecord record = getTableView().getItems().get(getIndex());
+                        handleReturnBookFromTableRowAction(record);
+                    });
+                }
 
-                    @Override
-                    public void updateItem(Void item, boolean empty) {
-                        super.updateItem(item, empty);
-                        if (empty) {
-                            setGraphic(null);
+                @Override
+                public void updateItem(Void item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty) {
+                        setGraphic(null);
+                    } else {
+                        BorrowingRecord record = getTableView().getItems().get(getIndex());
+                        if (record.getStatus() != LoanStatus.RETURNED) {
+                            setGraphic(btnReturn);
                         } else {
-                            BorrowingRecord record = getTableView().getItems().get(getIndex());
-                            // Chỉ hiển thị nút nếu sách chưa trả
-                            if (record.getStatus() != LoanStatus.RETURNED) {
-                                setGraphic(btnReturn);
-                            } else {
-                                setGraphic(null);
-                            }
+                            setGraphic(null);
                         }
                     }
-                };
-                return cell;
-            }
+                }
+            };
+            return cell;
         };
         loanActionColumn.setCellFactory(cellFactory);
     }
 
     private void loadActiveLoans() {
-        // Lấy danh sách các lượt mượn từ service (bao gồm cả ACTIVE và OVERDUE)
+        if (borrowingRecordService == null) {
+            System.err.println("ERROR_LMC_LOAD_LOANS: borrowingRecordService is null!");
+            return;
+        }
         // Trước khi lấy, cập nhật trạng thái quá hạn
         borrowingRecordService.updateAllOverdueStatuses(LocalDate.now());
         List<BorrowingRecord> activeLoans = borrowingRecordService.getAllLoans().stream()
@@ -172,27 +189,34 @@ public class LoanManagementController implements Initializable {
                 .collect(Collectors.toList());
 
         observableLoanList.setAll(activeLoans);
-        filteredLoanList = new FilteredList<>(observableLoanList, p -> true); // Ban đầu hiển thị tất cả
-        activeLoansTableView.setItems(filteredLoanList);
-        activeLoansTableView.refresh(); // Đảm bảo table được cập nhật
-        System.out.println("Active loans loaded: " + observableLoanList.size());
+        if (filteredLoanList == null) { // Khởi tạo filteredLoanList nếu nó null
+            filteredLoanList = new FilteredList<>(observableLoanList, p -> true);
+            activeLoansTableView.setItems(filteredLoanList);
+        } else {
+            // Nếu đã có, setPredicate(p -> true) để reset filter hoặc để nó tự cập nhật
+            // việc set lại items có thể hiệu quả hơn để đảm bảo refresh
+            activeLoansTableView.setItems(null); // Thử xóa items cũ
+            activeLoansTableView.layout();
+            activeLoansTableView.setItems(filteredLoanList);
+        }
+        activeLoansTableView.refresh();
+        System.out.println("DEBUG_LMC_LOAD_LOANS: Active loans loaded. Count: " + observableLoanList.size());
     }
 
     private void filterActiveLoansTable(String searchText) {
         if (filteredLoanList == null) return;
         if (searchText == null || searchText.isEmpty()) {
-            filteredLoanList.setPredicate(p -> true); // Hiển thị tất cả nếu ô tìm kiếm trống
+            filteredLoanList.setPredicate(p -> true);
         } else {
             String lowerCaseFilter = searchText.toLowerCase();
             filteredLoanList.setPredicate(record -> {
-                // Lấy thông tin sách và user để tìm kiếm
+                if (bookManagementService == null || userService == null) return false; // An toàn
                 Optional<Book> bookOpt = bookManagementService.findBookByIdInLibrary(record.getBookId());
                 Optional<User> userOpt = userService.findUserById(record.getUserId());
 
                 if (record.getRecordId().toLowerCase().contains(lowerCaseFilter)) return true;
                 if (bookOpt.isPresent() && bookOpt.get().getTitle().toLowerCase().contains(lowerCaseFilter)) return true;
                 if (userOpt.isPresent() && userOpt.get().getUsername().toLowerCase().contains(lowerCaseFilter)) return true;
-                // Thêm các trường tìm kiếm khác nếu muốn (ví dụ: theo ngày, trạng thái)
                 return false;
             });
         }
@@ -200,31 +224,32 @@ public class LoanManagementController implements Initializable {
 
     @FXML
     void handleSearchUserAction(ActionEvent event) {
+        if (userSearchField == null || userService == null || selectedUserInfoLabel == null) return;
         String searchTerm = userSearchField.getText().trim();
         if (searchTerm.isEmpty()) {
-            selectedUserInfoLabel.setText("User: Vui lòng nhập ID hoặc Username");
+            selectedUserInfoLabel.setText("Người dùng: Vui lòng nhập ID hoặc Username");
             selectedUserForLoan = null;
             updateBorrowButtonState();
             return;
         }
-        // Thử tìm theo ID trước, sau đó theo Username
         Optional<User> userOpt = userService.findUserById(searchTerm);
-        if (!userOpt.isPresent()) {
+        if (userOpt.isEmpty()) { // Sửa: dùng isEmpty() thay vì !isPresent() để rõ ràng hơn
             userOpt = userService.findUserByUsername(searchTerm);
         }
 
         if (userOpt.isPresent()) {
             selectedUserForLoan = userOpt.get();
-            selectedUserInfoLabel.setText("User: " + selectedUserForLoan.getUsername() + " (ID: " + selectedUserForLoan.getUserId() + ")");
+            selectedUserInfoLabel.setText("Người dùng: " + selectedUserForLoan.getUsername() + " (ID: " + selectedUserForLoan.getUserId() + ")");
         } else {
             selectedUserForLoan = null;
-            selectedUserInfoLabel.setText("User: Không tìm thấy người dùng '" + searchTerm + "'");
+            selectedUserInfoLabel.setText("Người dùng: Không tìm thấy '" + searchTerm + "'");
         }
         updateBorrowButtonState();
     }
 
     @FXML
     void handleSearchBookAction(ActionEvent event) {
+        if (bookSearchField == null || bookManagementService == null || selectedBookInfoLabel == null) return;
         String searchTerm = bookSearchField.getText().trim();
         if (searchTerm.isEmpty()) {
             selectedBookInfoLabel.setText("Sách: Vui lòng nhập ID, ISBN, hoặc Tiêu đề");
@@ -232,28 +257,27 @@ public class LoanManagementController implements Initializable {
             updateBorrowButtonState();
             return;
         }
-        // Thử tìm theo nhiều tiêu chí (cần mở rộng logic tìm kiếm trong BookManagementService nếu muốn tìm theo tiêu đề/ISBN từ đây)
-        // Tạm thời, chúng ta sẽ tìm theo ID trước, vì đây là thông tin chắc chắn nhất
         Optional<Book> bookOpt = bookManagementService.findBookByIdInLibrary(searchTerm);
-        // Nếu muốn tìm theo ISBN hoặc Title, bạn cần thêm các phương thức tương ứng trong service hoặc sửa đổi findBookByIdInLibrary
-        // Hoặc là, bạn có thể lấy tất cả sách và lọc ở đây, nhưng không hiệu quả lắm.
+        // TODO: Có thể mở rộng tìm kiếm theo ISBN/Title ở đây nếu cần
+        // if (bookOpt.isEmpty()) bookOpt = bookManagementService.findBookByIsbn13InLibrary(searchTerm);
+        // if (bookOpt.isEmpty()) bookOpt = bookManagementService.searchBooks(searchTerm, "TITLE").stream().findFirst();
+
 
         if (bookOpt.isPresent()) {
             selectedBookForLoan = bookOpt.get();
-            selectedBookInfoLabel.setText("Sách: " + selectedBookForLoan.getTitle() + " (Có sẵn: " + selectedBookForLoan.getAvailableQuantity() + ")");
-            if (selectedBookForLoan.getAvailableQuantity() <= 0) {
-                // Có thể đổi màu text hoặc thêm cảnh báo nếu sách đã hết
-                selectedBookInfoLabel.setText(selectedBookInfoLabel.getText() + " - HẾT SÁCH");
-            }
+            String availabilityText = (selectedBookForLoan.getAvailableQuantity() > 0) ?
+                    " (Có sẵn: " + selectedBookForLoan.getAvailableQuantity() + ")" :
+                    " - HẾT SÁCH";
+            selectedBookInfoLabel.setText("Sách: " + selectedBookForLoan.getTitle() + availabilityText);
         } else {
             selectedBookForLoan = null;
-            selectedBookInfoLabel.setText("Sách: Không tìm thấy sách '" + searchTerm + "'");
+            selectedBookInfoLabel.setText("Sách: Không tìm thấy '" + searchTerm + "'");
         }
         updateBorrowButtonState();
     }
 
     private void updateBorrowButtonState() {
-        // Nút "Cho Mượn Sách" chỉ bật khi đã chọn user, chọn sách, và sách đó còn hàng
+        if (borrowBookButton == null) return;
         boolean disable = !(selectedUserForLoan != null &&
                 selectedBookForLoan != null &&
                 selectedBookForLoan.getAvailableQuantity() > 0);
@@ -267,19 +291,30 @@ public class LoanManagementController implements Initializable {
             return;
         }
         if (selectedBookForLoan.getAvailableQuantity() <= 0) {
-            showAlert(Alert.AlertType.WARNING, "Hết sách", "Sách này hiện đã hết, không thể cho mượn.");
+            showAlert(Alert.AlertType.WARNING, "Hết sách", "Sách '" + selectedBookForLoan.getTitle() + "' hiện đã hết, không thể cho mượn.");
+            return;
+        }
+        if (bookManagementService == null || borrowingRecordService == null || userService == null) {
+            showAlert(Alert.AlertType.ERROR, "Lỗi Hệ thống", "Một hoặc nhiều service chưa được khởi tạo.");
             return;
         }
 
-        // Xác định ngày mượn và ngày hẹn trả (ví dụ: mượn trong 7 ngày)
+        // Kiểm tra xem user này có đang mượn cuốn sách này mà chưa trả không
+        boolean alreadyBorrowed = borrowingRecordService.getActiveLoansByUserId(selectedUserForLoan.getUserId())
+                .stream()
+                .anyMatch(loan -> loan.getBookId().equals(selectedBookForLoan.getId()));
+        if(alreadyBorrowed){
+            showAlert(Alert.AlertType.WARNING, "Sách đã được mượn", "Người dùng '" + selectedUserForLoan.getUsername() + "' đang mượn cuốn sách này và chưa trả.");
+            return;
+        }
+
+
         LocalDate borrowDate = LocalDate.now();
         LocalDate dueDate = borrowDate.plus(7, ChronoUnit.DAYS); // Mượn trong 7 ngày
 
-        // 1. Gọi BookManagementService để cập nhật availableQuantity
-        boolean bookAvailableAndUpdated = bookManagementService.handleBookBorrowed(selectedBookForLoan.getId());
+        boolean bookAvailabilityUpdated = bookManagementService.handleBookBorrowed(selectedBookForLoan.getId());
 
-        if (bookAvailableAndUpdated) {
-            // 2. Gọi BorrowingRecordService để tạo bản ghi mượn
+        if (bookAvailabilityUpdated) {
             BorrowingRecord newLoan = borrowingRecordService.createLoan(
                     selectedBookForLoan.getId(),
                     selectedUserForLoan.getUserId(),
@@ -288,103 +323,95 @@ public class LoanManagementController implements Initializable {
             );
 
             if (newLoan != null) {
-                // 3. Gọi UserService để cập nhật danh sách mượn của người dùng
                 userService.recordNewLoanForUser(selectedUserForLoan.getUserId(), newLoan.getRecordId());
-
                 showAlert(Alert.AlertType.INFORMATION, "Thành công",
-                        "Đã cho mượn sách '" + selectedBookForLoan.getTitle() +
-                                "' cho người dùng '" + selectedUserForLoan.getUsername() + "'.\n" +
+                        "Đã cho mượn sách: '" + selectedBookForLoan.getTitle() +
+                                "'\nCho người dùng: '" + selectedUserForLoan.getUsername() + "'.\n" +
                                 "Hạn trả: " + dueDate.toString());
 
-                // Làm mới giao diện
-                loadActiveLoans(); // Tải lại bảng các lượt mượn
+                loadActiveLoans();
                 // Cập nhật lại thông tin sách đã chọn (để thấy availableQuantity giảm)
-                handleSearchBookAction(null); // Gọi lại để refresh thông tin sách
-                // Reset lựa chọn
-                // selectedUserForLoan = null; // Cân nhắc có nên reset hay không
+                // và có thể xóa lựa chọn để tránh mượn nhầm lần nữa
+                String currentBookSearchTerm = bookSearchField.getText();
+                handleSearchBookAction(null); // Gọi để refresh label
+                bookSearchField.setText(currentBookSearchTerm); // Đặt lại text tìm kiếm nếu muốn
+                if (currentBookSearchTerm != null && !currentBookSearchTerm.isEmpty()) handleSearchBookAction(null); // Trigger lại search nếu có text
+
+                // Cân nhắc reset selectedUserForLoan và selectedBookForLoan
+                // selectedUserForLoan = null;
                 // selectedBookForLoan = null;
-                // selectedUserInfoLabel.setText("User: (Chưa chọn)");
+                // selectedUserInfoLabel.setText("Người dùng: (Chưa chọn)");
                 // selectedBookInfoLabel.setText("Sách: (Chưa chọn)");
                 updateBorrowButtonState();
 
             } else {
-                // Hoàn tác việc cập nhật availableQuantity nếu tạo record lỗi
-                bookManagementService.handleBookReturned(selectedBookForLoan.getId()); // Coi như trả lại sách vừa "mượn hụt"
-                showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể tạo bản ghi mượn sách.");
+                bookManagementService.handleBookReturned(selectedBookForLoan.getId()); // Hoàn tác
+                showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể tạo bản ghi mượn sách. Sách có thể đã được người này mượn và chưa trả.");
             }
         } else {
-            showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể cập nhật số lượng sách hoặc sách đã hết.");
+            showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể cập nhật số lượng sách hoặc sách đã hết (kiểm tra lại).");
         }
     }
 
-    // Phương thức này được gọi từ nút "Trả Sách" trên từng dòng của TableView
     private void handleReturnBookFromTableRowAction(BorrowingRecord recordToReturn) {
         if (recordToReturn == null || recordToReturn.getStatus() == LoanStatus.RETURNED) {
-            showAlert(Alert.AlertType.WARNING, "Thông tin không hợp lệ", "Lượt mượn này không hợp lệ hoặc đã được trả.");
+            showAlert(Alert.AlertType.WARNING, "Không hợp lệ", "Lượt mượn này không hợp lệ hoặc đã được trả.");
             return;
         }
-
-        // Hỏi xác nhận
-        Alert confirmationDialog = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmationDialog.setTitle("Xác nhận trả sách");
-        Optional<Book> bookOpt = bookManagementService.findBookByIdInLibrary(recordToReturn.getBookId());
-        String bookTitle = bookOpt.map(Book::getTitle).orElse(recordToReturn.getBookId());
-        confirmationDialog.setHeaderText("Trả sách: " + bookTitle);
-        confirmationDialog.setContentText("Bạn có chắc chắn muốn đánh dấu lượt mượn này là đã trả?");
-
-        Optional<ButtonType> result = confirmationDialog.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            performReturnBook(recordToReturn);
-        }
+        confirmAndPerformReturn(recordToReturn);
     }
 
     @FXML
-    void handleReturnBookAction(ActionEvent event) { // Được gọi từ nút "Trả Sách" chung
+    void handleReturnBookAction(ActionEvent event) {
         if (selectedLoanForReturn == null || selectedLoanForReturn.getStatus() == LoanStatus.RETURNED) {
-            showAlert(Alert.AlertType.WARNING, "Chưa chọn lượt mượn", "Vui lòng chọn một lượt mượn đang hoạt động để trả.");
+            showAlert(Alert.AlertType.WARNING, "Chưa chọn lượt mượn", "Vui lòng chọn một lượt mượn đang hoạt động từ bảng để trả.");
             return;
         }
-        // Hỏi xác nhận tương tự như trên
+        confirmAndPerformReturn(selectedLoanForReturn);
+    }
+
+    private void confirmAndPerformReturn(BorrowingRecord loanToReturn) {
         Alert confirmationDialog = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmationDialog.setTitle("Xác nhận trả sách");
-        Optional<Book> bookOpt = bookManagementService.findBookByIdInLibrary(selectedLoanForReturn.getBookId());
-        String bookTitle = bookOpt.map(Book::getTitle).orElse(selectedLoanForReturn.getBookId());
-        confirmationDialog.setHeaderText("Trả sách: " + bookTitle);
-        confirmationDialog.setContentText("Bạn có chắc chắn muốn đánh dấu lượt mượn này là đã trả?");
+        confirmationDialog.setTitle("Xác nhận Trả sách");
+        String bookTitle = bookManagementService.findBookByIdInLibrary(loanToReturn.getBookId())
+                .map(Book::getTitle).orElse("ID: " + loanToReturn.getBookId());
+        String username = userService.findUserById(loanToReturn.getUserId())
+                .map(User::getUsername).orElse("ID: " + loanToReturn.getUserId());
+
+        confirmationDialog.setHeaderText("Trả sách: '" + bookTitle + "' bởi người dùng: '" + username + "'?");
+        confirmationDialog.setContentText("Bạn có chắc chắn muốn đánh dấu lượt mượn này là đã trả không?");
 
         Optional<ButtonType> result = confirmationDialog.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            performReturnBook(selectedLoanForReturn);
+            performReturnBookLogic(loanToReturn);
         }
     }
 
-    private void performReturnBook(BorrowingRecord loanToReturn) {
-        // 1. Gọi BorrowingRecordService để cập nhật bản ghi trả
+    private void performReturnBookLogic(BorrowingRecord loanToReturn) {
+        if (borrowingRecordService == null || bookManagementService == null || userService == null) {
+            showAlert(Alert.AlertType.ERROR, "Lỗi Hệ thống", "Một hoặc nhiều service chưa được khởi tạo để thực hiện trả sách.");
+            return;
+        }
         boolean recordUpdated = borrowingRecordService.recordBookReturn(loanToReturn.getRecordId(), LocalDate.now());
 
         if (recordUpdated) {
-            // 2. Gọi BookManagementService để cập nhật availableQuantity
             bookManagementService.handleBookReturned(loanToReturn.getBookId());
-
-            // 3. Gọi UserService để cập nhật danh sách mượn của người dùng
             userService.recordLoanEndedForUser(loanToReturn.getUserId(), loanToReturn.getRecordId());
-
             showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã ghi nhận trả sách thành công.");
 
-            // Làm mới giao diện
             loadActiveLoans();
             // Cập nhật lại thông tin sách nếu nó đang được hiển thị ở phần chọn sách
             if(selectedBookForLoan != null && selectedBookForLoan.getId().equals(loanToReturn.getBookId())){
-                handleSearchBookAction(null);
+                handleSearchBookAction(null); // Refresh book info label
             }
-            // Vô hiệu hóa nút trả sách chung nếu không còn dòng nào được chọn hoặc dòng được chọn đã trả
-            if(activeLoansTableView.getSelectionModel().getSelectedItem() == null ||
-                    activeLoansTableView.getSelectionModel().getSelectedItem().getStatus() == LoanStatus.RETURNED) {
-                returnBookButton.setDisable(true);
+            // Cập nhật trạng thái nút trả sách chung
+            if (activeLoansTableView.getSelectionModel().getSelectedItem() == null ||
+                    (selectedLoanForReturn != null && selectedLoanForReturn.getRecordId().equals(loanToReturn.getRecordId()) &&
+                            activeLoansTableView.getSelectionModel().getSelectedItem().getStatus() == LoanStatus.RETURNED)) {
+                if(returnBookButton != null) returnBookButton.setDisable(true);
             }
-
         } else {
-            showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể cập nhật bản ghi trả sách.");
+            showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể cập nhật bản ghi trả sách. Sách có thể đã được trả trước đó.");
         }
     }
 
@@ -393,8 +420,10 @@ public class LoanManagementController implements Initializable {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
-        // Cậu có thể thêm CSS cho Alert nếu muốn, giống như đã làm ở BookManagementController
-        // alert.getDialogPane().getStylesheets().add(getClass().getResource("/com/lms/quanlythuvien/css/styles.css").toExternalForm());
+        URL cssUrl = getClass().getResource("/com/lms/quanlythuvien/css/styles.css");
+        if (cssUrl != null) {
+            alert.getDialogPane().getStylesheets().add(cssUrl.toExternalForm());
+        }
         alert.showAndWait();
     }
 }

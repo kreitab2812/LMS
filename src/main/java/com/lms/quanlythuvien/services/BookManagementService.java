@@ -4,78 +4,75 @@ import com.lms.quanlythuvien.models.Book; // Đảm bảo import Book model củ
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-// import java.util.UUID; // Có thể không cần nếu ID sách chủ yếu là ISBN
 import java.util.stream.Collectors;
 
 public class BookManagementService {
 
+    private static BookManagementService instance; // <<<--- BIẾN STATIC CHO SINGLETON
     private final List<Book> libraryBooks;
 
-    // Constructor có thể là public nếu các controller cần tạo instance mới
-    // Hoặc private nếu cậu dùng Singleton pattern cho service này (như đã thảo luận)
-    public BookManagementService() {
+    // <<<--- CONSTRUCTOR LÀ PRIVATE CHO SINGLETON
+    private BookManagementService() {
         this.libraryBooks = new ArrayList<>();
-        initializeSampleBooks(); // Bỏ comment nếu muốn có sách mẫu khi khởi tạo
-        System.out.println("DEBUG_BMS: BookManagementService initialized. Library size: " + this.libraryBooks.size());
+        initializeSampleBooks(); // Khởi tạo sách mẫu
+        System.out.println("DEBUG_BMS_SINGLETON: BookManagementService Singleton instance created. Initial library size: " + this.libraryBooks.size());
     }
 
-    // (Tùy chọn) Phương thức để thêm sách mẫu ban đầu
+    // <<<--- PHƯƠNG THỨC STATIC ĐỂ LẤY INSTANCE SINGLETON
+    public static synchronized BookManagementService getInstance() {
+        if (instance == null) {
+            instance = new BookManagementService();
+        }
+        return instance;
+    }
+
     private void initializeSampleBooks() {
         System.out.println("DEBUG_BMS_INIT: Initializing sample books...");
-        // Sách 1
-        // Sử dụng constructor của Book đã được cập nhật để nhận initialQuantity
+
+        // Sách mẫu 1
+        // Sử dụng constructor của Book:
         // Book(id, title, authors, publisher, publishedDate, description, categories,
         //      thumbnailUrl, infoLink, isbn10, isbn13, pageCount,
         //      averageRating, ratingsCount, initialQuantity)
         Book sampleBook1 = new Book(
-                "978-0132350884",
-                "Clean Code: A Handbook of Agile Software Craftsmanship",
-                List.of("Robert C. Martin"),
-                "Prentice Hall",
-                "2008-08-01",
+                "978-0132350884", "Clean Code: A Handbook of Agile Software Craftsmanship",
+                List.of("Robert C. Martin"), "Prentice Hall", "2008-08-01",
                 "Even bad code can function. But if code isn't clean...",
                 List.of("Software Engineering", "Programming"),
-                "http://books.google.com/...", // thumbnailUrl
-                "http://books.google.com/...", // infoLink
-                "0132350882",
-                "978-0132350884",
-                464,
-                4.5,
-                1234, // ratingsCount
-                10    // initialQuantity (sẽ tự set totalQuantity = 10, availableQuantity = 10)
+                "http://books.google.com/...", "http://books.google.com/...",
+                "0132350882", "978-0132350884", 464, 4.5, 1234,
+                10 // initialQuantity: totalQuantity = 10, availableQuantity = 10
         );
         sampleBook1.setShelfLocation("Kệ A1-01");
-        // Kiểm tra để tránh thêm trùng lặp nếu initializeSampleBooks được gọi nhiều lần (ví dụ nếu service không phải Singleton)
+        // Chỉ thêm nếu sách chưa có trong danh sách (quan trọng cho Singleton)
         if (this.libraryBooks.stream().noneMatch(b -> b.getId().equals(sampleBook1.getId()))) {
             this.libraryBooks.add(sampleBook1);
         }
 
-
+        // Sách mẫu 2
         Book sampleBook2 = new Book(
-                "978-0321765723",
-                "Effective Java",
-                List.of("Joshua Bloch"),
-                "Addison-Wesley Professional",
-                "2018-01-06",
+                "978-0321765723", "Effective Java", List.of("Joshua Bloch"),
+                "Addison-Wesley Professional", "2018-01-06",
                 "The Definitive Guide to Java Platform Best Practices...",
-                List.of("Java", "Programming"),
-                "http://books.google.com/...", // thumbnailUrl
-                "http://books.google.com/...", // infoLink
-                "0321765723",
-                "978-0321765723",
-                412,
-                4.7,
-                5678, // ratingsCount
-                5     // initialQuantity
+                List.of("Java", "Programming"), "http://books.google.com/...",
+                "http://books.google.com/...", "0321765723", "978-0321765723",
+                412, 4.7, 5678,
+                5 // initialQuantity: totalQuantity = 5, availableQuantity = 5
         );
         sampleBook2.setShelfLocation("Kệ A1-02");
         if (this.libraryBooks.stream().noneMatch(b -> b.getId().equals(sampleBook2.getId()))) {
             this.libraryBooks.add(sampleBook2);
         }
 
+        // Thêm các sách mẫu khác nếu cậu muốn, ví dụ:
+        Book sampleBook3 = new Book("IDSACH003", "The Pragmatic Programmer", List.of("Andrew Hunt", "David Thomas"), "Addison-Wesley", "1999-10-20", "Description...", List.of("Programming"), null, null, "ISBN10-003", "ISBN13-003", 352, 4.6, 2000, 7);
+        sampleBook3.setShelfLocation("Kệ B2-05");
+        if (this.libraryBooks.stream().noneMatch(b -> b.getId().equals(sampleBook3.getId()))) {
+            this.libraryBooks.add(sampleBook3);
+        }
+
         System.out.println("DEBUG_BMS_INIT: Sample books initialization finished. Current library size: " + this.libraryBooks.size());
     }
-
 
     public boolean addBookToLibrary(Book newBook) {
         if (newBook == null || newBook.getId() == null || newBook.getId().trim().isEmpty()) {
@@ -113,53 +110,44 @@ public class BookManagementService {
             existingBookInList.setDescription(updatedBookFromUI.getDescription());
             existingBookInList.setCategories(updatedBookFromUI.getCategories());
             existingBookInList.setThumbnailUrl(updatedBookFromUI.getThumbnailUrl());
-            existingBookInList.setInfoLink(updatedBookFromUI.getInfoLink()); // Giả sử Book có getInfoLink()
+            existingBookInList.setInfoLink(updatedBookFromUI.getInfoLink());
             existingBookInList.setIsbn10(updatedBookFromUI.getIsbn10());
             existingBookInList.setIsbn13(updatedBookFromUI.getIsbn13());
             existingBookInList.setPageCount(updatedBookFromUI.getPageCount());
             existingBookInList.setShelfLocation(updatedBookFromUI.getShelfLocation());
-            // Cập nhật cả thông tin rating nếu có trong updatedBookFromUI và model Book hỗ trợ
             existingBookInList.setAverageRating(updatedBookFromUI.getAverageRating());
             existingBookInList.setRatingsCount(updatedBookFromUI.getRatingsCount());
 
-
-            // Xử lý cập nhật totalQuantity và availableQuantity một cách cẩn thận
+            // Xử lý cập nhật totalQuantity và availableQuantity
             int oldTotalQuantity = existingBookInList.getTotalQuantity();
             int oldAvailableQuantity = existingBookInList.getAvailableQuantity();
-            int newTotalQuantityFromDialog = updatedBookFromUI.getTotalQuantity(); // Đây là total quantity mới từ dialog
+            int newTotalQuantityFromDialog = updatedBookFromUI.getTotalQuantity(); // Giá trị này từ dialog (ý là tổng số sách admin muốn có)
 
-            // Số sách đang được mượn (ngầm định từ số lượng cũ)
             int currentlyBorrowedCount = oldTotalQuantity - oldAvailableQuantity;
-            if (currentlyBorrowedCount < 0) { // Đảm bảo currentlyBorrowedCount không âm (trường hợp dữ liệu không nhất quán)
+            if (currentlyBorrowedCount < 0) { // Sanity check
                 System.err.println("WARN_BMS_UPDATE: Inconsistent old quantities for book " + existingBookInList.getId() + ". Resetting borrowed count to 0 for calculation.");
                 currentlyBorrowedCount = 0;
             }
 
-            // Cập nhật totalQuantity cho sách hiện có trong danh sách
-            existingBookInList.setTotalQuantity(newTotalQuantityFromDialog);
+            existingBookInList.setTotalQuantity(newTotalQuantityFromDialog); // Cập nhật tổng số lượng mới
 
-            // Tính toán availableQuantity mới
-            // availableQuantity mới = totalQuantity mới - số sách đang mượn
+            // Tính lại số lượng có sẵn mới
             int newAvailableQuantity = newTotalQuantityFromDialog - currentlyBorrowedCount;
 
-            // Đảm bảo availableQuantity mới không âm và không lớn hơn totalQuantity mới
             if (newAvailableQuantity < 0) {
-                System.err.println("WARN_BMS_UPDATE: New total quantity " + newTotalQuantityFromDialog +
-                        " for book ID " + existingBookInList.getId() +
-                        " is less than the number of implied currently borrowed books (" + currentlyBorrowedCount +
-                        "). This might indicate an issue or require admin action on loans.");
-                // Trong trường hợp này, availableQuantity sẽ là 0,
-                // và totalQuantity có thể cần được điều chỉnh lại bằng currentlyBorrowedCount nếu không cho phép total < borrowed.
-                // Hoặc, đây là một lỗi và không nên cho phép cập nhật nếu total mới < số đang mượn.
-                // Tạm thời, chúng ta sẽ giới hạn availableQuantity = 0 nếu nó âm.
+                System.err.println("WARN_BMS_UPDATE: New total quantity (" + newTotalQuantityFromDialog +
+                        ") for book ID " + existingBookInList.getId() +
+                        " is less than implied borrowed books (" + currentlyBorrowedCount +
+                        "). Setting available quantity to 0. Admin should review loans for this book.");
                 newAvailableQuantity = 0;
-                // Nếu total mới nhỏ hơn số đang mượn, có thể nên báo lỗi rõ ràng hơn hoặc không cho phép.
-                // For now, we'll set available to 0 and keep the new total.
+                // Cân nhắc: Nếu newTotalQuantityFromDialog < currentlyBorrowedCount, có thể không cho phép cập nhật
+                // hoặc tự động đặt newTotalQuantityFromDialog = currentlyBorrowedCount để đảm bảo tính nhất quán hơn.
+                // Ví dụ: existingBookInList.setTotalQuantity(Math.max(newTotalQuantityFromDialog, currentlyBorrowedCount));
             }
-            if (newAvailableQuantity > newTotalQuantityFromDialog) { // Không thể xảy ra nếu currentlyBorrowedCount >= 0
-                newAvailableQuantity = newTotalQuantityFromDialog;
+            // Đảm bảo availableQuantity không vượt quá totalQuantity mới
+            if (newAvailableQuantity > existingBookInList.getTotalQuantity()) {
+                newAvailableQuantity = existingBookInList.getTotalQuantity();
             }
-
             existingBookInList.setAvailableQuantity(newAvailableQuantity);
 
             System.out.println("DEBUG_BMS_UPDATE: Book updated: " + existingBookInList.getTitle() +
@@ -176,17 +164,16 @@ public class BookManagementService {
             System.err.println("ERROR_BMS_DELETE: Book ID cannot be null.");
             return false;
         }
-        // Cần kiểm tra xem sách có đang được ai đó mượn không (thông qua BorrowingRecordService)
-        // Tạm thời, chúng ta vẫn xóa trực tiếp. Nếu đã làm Singleton:
+        // Trong tương lai, khi BorrowingRecordService là Singleton và có thể truy cập được:
         // BorrowingRecordService brs = BorrowingRecordService.getInstance();
         // if (!brs.getActiveLoansByBookId(bookId).isEmpty()) {
         //     System.err.println("ERROR_BMS_DELETE: Cannot delete book " + bookId + ". It has active loans.");
-        //     return false;
+        //     return false; // Hoặc ném một custom exception
         // }
 
         boolean removed = libraryBooks.removeIf(book -> bookId.equals(book.getId()));
         if (removed) {
-            System.out.println("DEBUG_BMS_DELETE: Book deleted with ID: " + bookId + ". Total books: " + libraryBooks.size());
+            System.out.println("DEBUG_BMS_DELETE: Book deleted with ID: " + bookId + ". Total books now: " + libraryBooks.size());
         } else {
             System.err.println("ERROR_BMS_DELETE: Book with ID '" + bookId + "' not found for deletion.");
         }
@@ -208,18 +195,16 @@ public class BookManagementService {
     }
 
     public List<Book> getAllBooksInLibrary() {
-        return new ArrayList<>(libraryBooks);
+        return new ArrayList<>(libraryBooks); // Trả về bản sao
     }
 
     public List<Book> searchBooksInLibrary(String keyword, String searchType) {
-        // Giữ nguyên logic của cậu
         if (keyword == null || keyword.trim().isEmpty()) {
             return getAllBooksInLibrary();
         }
         String lowerCaseKeyword = keyword.toLowerCase();
         return libraryBooks.stream()
                 .filter(book -> {
-                    // ... (logic tìm kiếm của cậu) ...
                     if (searchType == null || searchType.equalsIgnoreCase("ALL")) {
                         return (book.getTitle() != null && book.getTitle().toLowerCase().contains(lowerCaseKeyword)) ||
                                 (book.getAuthors() != null && book.getAuthors().stream().anyMatch(author -> author.toLowerCase().contains(lowerCaseKeyword))) ||
@@ -239,18 +224,15 @@ public class BookManagementService {
                 .collect(Collectors.toList());
     }
 
-    // Các phương thức này được gọi bởi LoanManagementController (hoặc service khác)
-    // để cập nhật trạng thái sẵn có của sách.
     public boolean handleBookBorrowed(String bookId) {
         Optional<Book> bookOpt = findBookByIdInLibrary(bookId);
         if (bookOpt.isPresent()) {
             Book book = bookOpt.get();
-            // Phương thức borrowBook() trong Book model sẽ tự giảm availableQuantity
-            if (book.borrowBook()) { // borrowBook() nên trả về true nếu thành công
+            if (book.borrowBook()) { // Giả sử book.borrowBook() trả về true nếu thành công
                 System.out.println("DEBUG_BMS_BORROW: Book ID " + bookId + " processed for borrowing. Available now: " + book.getAvailableQuantity());
                 return true;
             } else {
-                System.err.println("ERROR_BMS_BORROW: Book ID " + bookId + " is not available (borrowBook() in model failed).");
+                System.err.println("ERROR_BMS_BORROW: Book ID " + bookId + " is not available (model.borrowBook() failed).");
                 return false;
             }
         }
@@ -262,8 +244,7 @@ public class BookManagementService {
         Optional<Book> bookOpt = findBookByIdInLibrary(bookId);
         if (bookOpt.isPresent()) {
             Book book = bookOpt.get();
-            // Phương thức returnBook() trong Book model sẽ tự tăng availableQuantity
-            book.returnBook();
+            book.returnBook(); // Giả sử book.returnBook() không cần trả về boolean và luôn thành công nếu sách tồn tại
             System.out.println("DEBUG_BMS_RETURN: Book ID " + bookId + " processed for return. Available now: " + book.getAvailableQuantity());
             return true;
         }
