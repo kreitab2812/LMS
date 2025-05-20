@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+<BorderPane prefHeight="450.0" prefWidth="550.0" styleClass="locked-account-pane" stylesheets="@/com/lms/quanlythuvien/css/styles.css" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.common.LockedAccountController">
+    <center>
+        <VBox alignment="CENTER" spacing="15.0" styleClass="locked-content-box">
+            <padding>
+                <Insets bottom="30.0" left="30.0" right="30.0" top="20.0" />
+            </padding>
+            <children>
+                <ImageView fx:id="warningIconImageView" fitHeight="80.0" fitWidth="80.0" pickOnBounds="true" preserveRatio="true"> <VBox.margin><Insets bottom="10.0"/></VBox.margin>
+                </ImageView>
+                <Label text="TÀI KHOẢN BỊ TẠM KHÓA" styleClass="locked-title-label"/>
+                <Separator prefWidth="200.0" />
+                <Label fx:id="lockReasonMessageLabel" styleClass="locked-reason-label" textAlignment="CENTER" wrapText="true" text="Lý do: Mượn sách quá hạn và/hoặc điểm uy tín thấp."/>
+
+                <VBox fx:id="overdueBooksSection" spacing="5.0" managed="false" visible="false">
+                    <children>
+                        <Label text="Sách đang quá hạn cần trả:" styleClass="label-bold-section"/>
+                        <ListView fx:id="overdueBooksListView" prefHeight="100.0" styleClass="compact-list-view-locked"/>
+                    </children>
+                </VBox>
+
+                <Label fx:id="fineAmountLabel" styleClass="locked-fine-label" text="Tổng phí phạt hiện tại: 0 VND"/>
+
+                <Label styleClass="locked-instruction-label" textAlignment="CENTER" wrapText="true" text="Vui lòng liên hệ Quản trị viên thư viện (Phòng Hỗ trợ Sinh viên hoặc quầy thủ thư) để được hướng dẫn mở khóa tài khoản và giải quyết các vấn đề liên quan."/>
+
+                <Button fx:id="acknowledgeButton" text="Tôi Đã Hiểu" onAction="#handleAcknowledgeAction" styleClass="primary-button">
+                    <VBox.margin><Insets top="10.0"/></VBox.margin>
+                </Button>
+            </children>
+        </VBox>
+    </center>
+</BorderPane>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ButtonBar?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?> <?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="15.0" styleClass="dialog-form-pane" stylesheets="@/com/lms/quanlythuvien/css/styles.css"
+      xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.lms.quanlythuvien.controllers.admin.dialogs.AuthorFormDialogController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="10.0" />
+    </padding>
+    <children>
+        <Label fx:id="dialogTitleLabel" styleClass="dialog-form-title" text="Thêm/Sửa Thông Tin Tác Giả"/>
+        <GridPane hgap="10.0" vgap="10.0" VBox.vgrow="ALWAYS">
+            <columnConstraints>
+                <ColumnConstraints halignment="RIGHT" hgrow="NEVER" minWidth="100.0" prefWidth="120.0" />
+                <ColumnConstraints hgrow="ALWAYS" />
+            </columnConstraints>
+
+            <Label text="Tên tác giả (*):" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="form-label"/>
+            <TextField fx:id="nameField" GridPane.rowIndex="0" GridPane.columnIndex="1" styleClass="form-input"/>
+
+            <Label text="Tiểu sử:" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="form-label"/>
+            <TextArea fx:id="bioArea" prefRowCount="4" wrapText="true" GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="form-input"/>
+
+            <Label text="Năm sinh (YYYY):" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="form-label"/>
+            <TextField fx:id="yobField" promptText="Ví dụ: 1980" GridPane.rowIndex="2" GridPane.columnIndex="1" styleClass="form-input"/>
+
+            <Label text="Năm mất (YYYY):" GridPane.rowIndex="3" GridPane.columnIndex="0" styleClass="form-label"/>
+            <TextField fx:id="yodField" promptText="Để trống nếu còn sống" GridPane.rowIndex="3" GridPane.columnIndex="1" styleClass="form-input"/>
+
+            <Label text="Giới tính:" GridPane.rowIndex="4" GridPane.columnIndex="0" styleClass="form-label"/>
+            <TextField fx:id="genderField" promptText="Nam/Nữ/Khác" GridPane.rowIndex="4" GridPane.columnIndex="1" styleClass="form-input"/>
+
+            <Label text="Quốc tịch:" GridPane.rowIndex="5" GridPane.columnIndex="0" styleClass="form-label"/>
+            <TextField fx:id="nationalityField" GridPane.rowIndex="5" GridPane.columnIndex="1" styleClass="form-input"/>
+
+            <Label text="Nơi sinh:" GridPane.rowIndex="6" GridPane.columnIndex="0" styleClass="form-label"/>
+            <TextField fx:id="placeOfBirthField" GridPane.rowIndex="6" GridPane.columnIndex="1" styleClass="form-input"/>
+
+            <Label text="URL Ảnh đại diện:" GridPane.rowIndex="7" GridPane.columnIndex="0" styleClass="form-label"/>
+            <TextField fx:id="avatarUrlField" GridPane.rowIndex="7" GridPane.columnIndex="1" styleClass="form-input"/>
+
+            <Label fx:id="errorFormLabel" styleClass="error-label" managed="false" visible="false" GridPane.rowIndex="8" GridPane.columnIndex="1"/>
+        </GridPane>
+        <ButtonBar>
+            <buttons>
+                <Button fx:id="saveAuthorButton" onAction="#handleSaveAuthor" text="Lưu" styleClass="primary-button"/>
+                <Button fx:id="cancelAuthorButton" onAction="#handleCancel" text="Hủy" styleClass="secondary-button"/>
+            </buttons>
+        </ButtonBar>
+    </children>
+</VBox>

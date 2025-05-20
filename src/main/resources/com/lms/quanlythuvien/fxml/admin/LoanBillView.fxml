@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?> <?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<BorderPane prefWidth="450.0" styleClass="dialog-pane-bill" stylesheets="@/com/lms/quanlythuvien/css/styles.css" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.admin.LoanBillController">
+    <padding>
+        <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+    </padding>
+    <top>
+        <Label text="PHIẾU MƯỢN SÁCH" styleClass="dialog-title" BorderPane.alignment="CENTER">
+            <BorderPane.margin><Insets bottom="15.0" /></BorderPane.margin>
+        </Label>
+    </top>
+    <center>
+        <VBox spacing="15.0">
+            <GridPane hgap="10.0" vgap="8.0">
+                <columnConstraints>
+                    <ColumnConstraints halignment="RIGHT" hgrow="NEVER" minWidth="100.0" prefWidth="120.0" />
+                    <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="250.0" />
+                </columnConstraints>
+                <children>
+                    <Label text="Tên sách:" GridPane.rowIndex="0" styleClass="form-label-bill"/>
+                    <Label fx:id="bookTitleLabel" text="[Tên Sách]" GridPane.columnIndex="1" GridPane.rowIndex="0" styleClass="form-value-bill" wrapText="true"/>
+
+                    <Label text="Tác giả:" GridPane.rowIndex="1" styleClass="form-label-bill"/>
+                    <Label fx:id="bookAuthorsLabel" text="[Tên Tác Giả]" GridPane.columnIndex="1" GridPane.rowIndex="1" styleClass="form-value-bill" wrapText="true"/>
+
+                    <Label text="Mã sách (ISBN/ID):" GridPane.rowIndex="2" styleClass="form-label-bill"/>
+                    <Label fx:id="bookIsbnLabel" text="[ISBN/ID]" GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="form-value-bill"/>
+
+                    <Label text="Người mượn:" GridPane.rowIndex="3" styleClass="form-label-bill"/>
+                    <Label fx:id="userNameLabel" text="[Tên Người Mượn]" GridPane.columnIndex="1" GridPane.rowIndex="3" styleClass="form-value-bill"/>
+
+                    <Label text="Mã người mượn:" GridPane.rowIndex="4" styleClass="form-label-bill"/>
+                    <Label fx:id="userIdLabel" text="[ID Người Mượn]" GridPane.columnIndex="1" GridPane.rowIndex="4" styleClass="form-value-bill"/>
+
+                    <Label text="Ngày mượn:" GridPane.rowIndex="5" styleClass="form-label-bill"/>
+                    <Label fx:id="borrowDateLabel" text="[dd/MM/yyyy]" GridPane.columnIndex="1" GridPane.rowIndex="5" styleClass="form-value-bill"/>
+
+                    <Label text="Ngày hẹn trả:" GridPane.rowIndex="6" styleClass="form-label-bill"/>
+                    <Label fx:id="dueDateLabel" text="[dd/MM/yyyy]" GridPane.columnIndex="1" GridPane.rowIndex="6" styleClass="form-value-bill-due"/>
+                </children>
+            </GridPane>
+
+            <Separator prefWidth="200.0" />
+
+            <VBox alignment="CENTER" spacing="5.0">
+                <Label text="Mã QR của Sách/Phiếu:" styleClass="label-regular-bold"/>
+                <ImageView fx:id="qrCodeImageView" fitHeight="150.0" fitWidth="150.0" pickOnBounds="true" preserveRatio="true">
+                    <VBox.margin><Insets top="5.0"/></VBox.margin>
+                </ImageView>
+                <Label fx:id="qrDataLabel" text="[Dữ liệu QR]" styleClass="label-small-italic"/>
+            </VBox>
+        </VBox>
+    </center>
+    <bottom>
+        <HBox alignment="CENTER_RIGHT" spacing="10.0">
+            <padding><Insets top="20.0"/></padding>
+            <Button fx:id="closeBillButton" text="Đóng" styleClass="secondary-button" onAction="#handleCloseBill"/>
+        </HBox>
+    </bottom>
+</BorderPane>

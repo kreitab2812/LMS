@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane styleClass="subview-container-white" stylesheets="@/com/lms/quanlythuvien/css/styles.css" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.admin.BookLoanHistoryController">
+    <padding>
+        <Insets top="15.0" right="20.0" bottom="20.0" left="20.0" />
+    </padding>
+    <top>
+        <VBox spacing="5.0" BorderPane.alignment="CENTER_LEFT">
+            <children>
+                <Label text="Lịch Sử Mượn Sách" styleClass="view-title"/>
+                <Label fx:id="bookTitleLabel" styleClass="view-subtitle" text="Tên sách: Đang tải..."/>
+            </children>
+            <padding>
+                <Insets bottom="15.0"/>
+            </padding>
+        </VBox>
+    </top>
+    <center>
+        <TableView fx:id="loanHistoryTableView" BorderPane.alignment="CENTER" VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="userIdColumn" prefWidth="150.0" text="Người Mượn (ID)"/>
+                <TableColumn fx:id="userNameColumn" prefWidth="200.0" text="Tên Người Mượn"/>
+                <TableColumn fx:id="borrowDateColumn" prefWidth="120.0" text="Ngày Mượn" style="-fx-alignment: CENTER;"/>
+                <TableColumn fx:id="dueDateColumn" prefWidth="120.0" text="Ngày Hẹn Trả" style="-fx-alignment: CENTER;"/>
+                <TableColumn fx:id="returnDateColumn" prefWidth="120.0" text="Ngày Trả Thực Tế" style="-fx-alignment: CENTER;"/>
+                <TableColumn fx:id="statusColumn" prefWidth="120.0" text="Trạng Thái" style="-fx-alignment: CENTER;"/>
+            </columns>
+            <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+            </columnResizePolicy>
+            <placeholder>
+                <Label text="Chưa có lịch sử mượn cho cuốn sách này hoặc không thể tải dữ liệu." styleClass="placeholder-text"/>
+            </placeholder>
+        </TableView>
+    </center>
+</BorderPane>

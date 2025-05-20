@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane styleClass="subview-container-white" stylesheets="@/com/lms/quanlythuvien/css/styles.css" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.admin.AdminHomeContentController">
+    <top>
+        <VBox styleClass="view-header-pane" alignment="CENTER_LEFT">
+            <padding><Insets bottom="15.0" left="20.0" right="20.0" top="15.0" /></padding>
+            <Label text="Bảng Điều Khiển Chính" styleClass="view-title"/>
+            <Label text="Tổng quan hoạt động của thư viện." styleClass="view-subtitle"/>
+        </VBox>
+    </top>
+    <center>
+        <ScrollPane fx:id="adminHomeContentScrollPane" fitToHeight="true" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="tab-content-scrollpane">
+            <content>
+                <VBox fx:id="dashboardMainContentContainer" spacing="25.0" style="-fx-padding: 20px; -fx-background-color: #ffffff;">
+                    <padding>
+                        <Insets bottom="30.0" left="20.0" right="20.0" top="20.0" />
+                    </padding>
+
+                    <HBox spacing="25.0" alignment="TOP_LEFT">
+                        <children>
+                            <VBox fx:id="adminInfoSection" spacing="10.0" HBox.hgrow="ALWAYS" styleClass="content-card">
+                                <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+                                <Label text="THÔNG TIN QUẢN TRỊ VIÊN" styleClass="view-title-user-section" />
+                                <HBox alignment="CENTER_LEFT" spacing="20.0" VBox.vgrow="ALWAYS">
+                                    <ImageView fx:id="adminAvatarImageView" fitHeight="80.0" fitWidth="80.0" pickOnBounds="true" preserveRatio="true" styleClass="avatar-image-dashboard" />
+                                    <VBox spacing="5.0">
+                                        <Label fx:id="adminGreetingLabel" styleClass="greeting-label-dashboard" text="Xin chào," />
+                                        <Label fx:id="adminUserNameLabel" styleClass="username-label-dashboard-large" text="Tên Admin" />
+                                        <Label fx:id="adminRoleInfoLabel" styleClass="email-label-dashboard" text="Vai trò: Quản trị viên" />
+                                    </VBox>
+                                </HBox>
+                            </VBox>
+
+                            <VBox fx:id="quoteCardAdminContainer" alignment="CENTER" spacing="8.0" styleClass="content-card" HBox.hgrow="NEVER" minWidth="320.0" prefWidth="320.0">
+                                <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+                                <Label text="TRÍCH DẪN MỖI NGÀY" styleClass="home-quote-card-title" />
+                                <Label fx:id="quoteTextLabelAdmin" alignment="CENTER" textAlignment="CENTER" wrapText="true" styleClass="home-quote-card-text-user" VBox.vgrow="ALWAYS"/>
+                                <Label fx:id="quoteAuthorLabelAdmin" alignment="CENTER" styleClass="home-quote-card-author-user" />
+                            </VBox>
+                        </children>
+                    </HBox>
+
+                    <HBox spacing="20.0" alignment="TOP_LEFT">
+                        <VBox.margin>
+                            <Insets top="10.0" />
+                        </VBox.margin>
+                        <children>
+                            <VBox styleClass="info-stat-card-large" HBox.hgrow="ALWAYS">
+                                <Label text="SÁCH ĐANG MƯỢN" styleClass="stat-title-large"/>
+                                <Label fx:id="activeLoansCountLabel" styleClass="stat-value-large" text="0"/>
+                            </VBox>
+                            <VBox styleClass="info-stat-card-large" HBox.hgrow="ALWAYS">
+                                <Label text="SÁCH QUÁ HẠN" styleClass="stat-title-large"/>
+                                <Label fx:id="overdueLoansCountLabel" styleClass="stat-value-large" text="0"/>
+                            </VBox>
+                            <VBox styleClass="info-stat-card-large" HBox.hgrow="ALWAYS">
+                                <Label text="YÊU CẦU MỚI" styleClass="stat-title-large"/>
+                                <Label fx:id="pendingRequestsCountLabel" styleClass="stat-value-large" text="0"/>
+                            </VBox>
+                        </children>
+                    </HBox>
+
+                    <VBox spacing="10.0" styleClass="content-card">
+                        <VBox.margin><Insets top="15.0"/></VBox.margin>
+                        <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+                        <Label text="SÁCH USER SẮP ĐẾN HẠN TRẢ" styleClass="view-title-user-section" alignment="CENTER_LEFT"/>
+                        <ListView fx:id="upcomingDueBooksListView" prefHeight="250.0" styleClass="info-list-view">
+                            <placeholder><Label text="Không có sách nào của người dùng sắp đến hạn." styleClass="placeholder-text"/></placeholder>
+                        </ListView>
+                    </VBox>
+                </VBox>
+            </content>
+        </ScrollPane>
+    </center>
+</BorderPane>

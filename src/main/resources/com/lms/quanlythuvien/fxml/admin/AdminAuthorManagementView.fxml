@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?> <?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.TilePane?> <?import javafx.scene.layout.VBox?>
+
+<BorderPane styleClass="subview-container-white" stylesheets="@/com/lms/quanlythuvien/css/styles.css" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.admin.AdminAuthorManagementController">
+    <top>
+        <VBox styleClass="view-header-pane" alignment="CENTER_LEFT">
+            <padding><Insets bottom="15.0" left="20.0" right="20.0" top="15.0" /></padding>
+            <Label text="Quản Lý Tác Giả" styleClass="view-title"/>
+            <Label text="Thêm, sửa, xóa và quản lý thông tin các tác giả trong thư viện." styleClass="view-subtitle"/>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="15.0" style="-fx-padding: 20px;">
+            <children>
+                <HBox spacing="10.0" alignment="CENTER_LEFT">
+                    <children>
+                        <TextField fx:id="authorSearchField" promptText="Tìm kiếm theo tên tác giả..." HBox.hgrow="ALWAYS" styleClass="form-input-tab-search"/>
+                        <Button fx:id="searchAuthorButton" text="Tìm" styleClass="primary-button-small" onAction="#handleSearchAuthorAction"/>
+                        <Button fx:id="clearAuthorSearchButton" text="Xóa tìm" styleClass="secondary-button-small" onAction="#handleClearAuthorSearchAction"/>
+                        <Button fx:id="addAuthorButton" text="Thêm Tác Giả Mới" styleClass="primary-button" onAction="#handleAddAuthorAction">
+                            <HBox.margin><Insets left="20.0"/></HBox.margin>
+                        </Button>
+                    </children>
+                </HBox>
+
+                <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="admin-tilepane-scrollpane">
+                    <content>
+                        <TilePane fx:id="authorsTilePane" hgap="20.0" vgap="20.0" styleClass="author-tile-pane-admin" prefColumns="0"> <padding>
+                            <Insets top="15.0" bottom="15.0" left="5.0" right="5.0"/>
+                        </padding>
+                        </TilePane>
+                    </content>
+                </ScrollPane>
+            </children>
+        </VBox>
+    </center>
+</BorderPane>

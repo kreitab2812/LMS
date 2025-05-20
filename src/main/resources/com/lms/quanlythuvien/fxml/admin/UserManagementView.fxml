@@ -7,63 +7,56 @@
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.Separator?>
-<?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.BorderPane?> <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
+<VBox fx:id="userManagementRoot" spacing="15.0" styleClass="subview-container-white" stylesheets="@/com/lms/quanlythuvien/css/styles.css" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.admin.AdminUserManagementController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+    </padding>
 
-<VBox fx:id="userManagementRoot" spacing="15.0" styleClass="root" stylesheets="@../../css/styles.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.admin.UserManagementController"> <padding>
-    <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
-</padding>
-
-    <Label styleClass="view-title" text="Quản lý Người dùng Thư viện">
-        <font>
-            <Font name="System Bold" size="18.0" />
-        </font>
-    </Label>
+    <Label styleClass="view-title" text="Quản lý Người dùng Thư viện"/>
 
     <HBox spacing="10.0" alignment="CENTER_LEFT">
-        <TextField fx:id="userFilterField" promptText="Lọc theo Username hoặc Email..." HBox.hgrow="ALWAYS" />
-        <Button fx:id="addUserButton" text="Thêm Người dùng" styleClass="primary-button" onAction="#handleAddUserAction" />
-        <Button fx:id="editUserButton" text="Sửa Thông tin" styleClass="secondary-button" onAction="#handleEditUserAction" disable="true" />
-        <Button fx:id="deleteUserButton" text="Xóa Người dùng" styleClass="danger-button" onAction="#handleDeleteUserAction" disable="true" />
+        <TextField fx:id="userFilterField" promptText="Lọc theo Username, Email, ID..." HBox.hgrow="ALWAYS" styleClass="form-input-tab-search"/>
+        <Button fx:id="addUserButton" text="Thêm Người dùng" styleClass="primary-button-small" onAction="#handleAddUserAction" />
+        <Button fx:id="editUserButton" text="Sửa Thông tin" styleClass="secondary-button-small" onAction="#handleEditUserAction" disable="true" />
+        <Button fx:id="deleteUserButton" text="Xóa Người dùng" styleClass="danger-button-small" onAction="#handleDeleteUserAction" disable="true" />
     </HBox>
 
-    <TableView fx:id="usersTableView" VBox.vgrow="ALWAYS">
+    <TableView fx:id="usersTableView" VBox.vgrow="ALWAYS" style="-fx-margin-top: 10px;">
         <columns>
-            <TableColumn fx:id="userIdColumn" prefWidth="150.0" text="User ID" />
-            <TableColumn fx:id="usernameColumn" prefWidth="200.0" text="Username" />
-            <TableColumn fx:id="emailColumn" prefWidth="250.0" text="Email" />
-            <TableColumn fx:id="roleColumn" prefWidth="100.0" text="Vai trò" />
-            <TableColumn fx:id="activeLoansCountColumn" prefWidth="150.0" text="Sách Đang Mượn" />
+            <TableColumn fx:id="userIdColumn" prefWidth="140.0" text="User ID" />
+            <TableColumn fx:id="usernameColumn" prefWidth="150.0" text="Username" />
+            <TableColumn fx:id="emailColumn" prefWidth="200.0" text="Email" />
+            <TableColumn fx:id="roleColumn" prefWidth="80.0" text="Vai trò" />
+            <TableColumn fx:id="activeLoansCountColumn" prefWidth="120.0" text="Đang Mượn" style="-fx-alignment: CENTER;"/>
+            <TableColumn fx:id="reputationScoreColumn" prefWidth="100.0" text="Điểm Uy Tín" style="-fx-alignment: CENTER;"/>
+            <TableColumn fx:id="accountStatusColumn" prefWidth="120.0" text="Trạng Thái TK" style="-fx-alignment: CENTER;"/>
         </columns>
-        <columnResizePolicy>
-            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
-        </columnResizePolicy>
+        <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY" /></columnResizePolicy>
+        <placeholder><Label text="Không có người dùng nào." styleClass="placeholder-text"/></placeholder>
     </TableView>
 
-    <Separator fx:id="detailsSeparator" visible="false">
-        <VBox.margin><Insets top="10.0" bottom="5.0"/></VBox.margin>
+    <Separator fx:id="detailsSeparator" visible="false" managed="false">
+        <VBox.margin><Insets top="15.0" bottom="10.0"/></VBox.margin>
     </Separator>
 
-    <VBox fx:id="userDetailsPane" spacing="10.0" visible="false" managed="false">
-        <Label fx:id="selectedUserDetailsTitleLabel" styleClass="view-title" text="Chi tiết và Lịch sử mượn của: N/A">
-            <font><Font size="16.0" /></font>
-        </Label>
+    <VBox fx:id="userDetailsPane" spacing="10.0" visible="false" managed="false" styleClass="content-card">
+        <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+        <Label fx:id="selectedUserDetailsTitleLabel" styleClass="view-subtitle" text="Lịch sử mượn của: N/A"/>
         <TableView fx:id="userLoanHistoryTableView" prefHeight="200.0">
             <placeholder>
-                <Label text="Không có lịch sử mượn sách hoặc chưa chọn người dùng."/>
+                <Label text="Không có lịch sử mượn sách hoặc chưa chọn người dùng." styleClass="placeholder-text"/>
             </placeholder>
             <columns>
-                <TableColumn fx:id="historyBookTitleColumn" prefWidth="250.0" text="Tiêu Đề Sách" />
-                <TableColumn fx:id="historyBorrowDateColumn" prefWidth="120.0" text="Ngày Mượn" />
-                <TableColumn fx:id="historyDueDateColumn" prefWidth="120.0" text="Ngày Hẹn Trả" />
-                <TableColumn fx:id="historyReturnDateColumn" prefWidth="120.0" text="Ngày Trả Thực" />
-                <TableColumn fx:id="historyStatusColumn" prefWidth="120.0" text="Trạng Thái" />
+                <TableColumn fx:id="historyRecordIdColumn" prefWidth="80.0" text="ID Mượn" style="-fx-alignment: CENTER;"/>
+                <TableColumn fx:id="historyBookTitleColumn" prefWidth="280.0" text="Tiêu Đề Sách" />
+                <TableColumn fx:id="historyBorrowDateColumn" prefWidth="110.0" text="Ngày Mượn" />
+                <TableColumn fx:id="historyDueDateColumn" prefWidth="110.0" text="Ngày Hẹn Trả" />
+                <TableColumn fx:id="historyReturnDateColumn" prefWidth="110.0" text="Ngày Trả" />
+                <TableColumn fx:id="historyStatusColumn" prefWidth="100.0" text="Trạng Thái" />
             </columns>
-            <columnResizePolicy>
-                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
-            </columnResizePolicy>
+            <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY" /></columnResizePolicy>
         </TableView>
     </VBox>
 </VBox>

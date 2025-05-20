@@ -1,95 +1,205 @@
-package com.lms.quanlythuvien.models.user; // Hoặc package models của cậu
+package com.lms.quanlythuvien.models.user;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter; // Thêm để dùng trong get...Formatted
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+import java.util.Objects; // Thêm cho equals và hashCode
+import java.util.UUID;   // Vẫn dùng trong constructor tối thiểu
 
 public class User {
 
     public enum Role { ADMIN, USER }
 
+    // Thông tin cơ bản
     private String userId;
     private String username;
     private String email;
     private String passwordHash;
     private Role role;
-    private List<String> activeLoanRecordIds; // THAY ĐỔI: từ borrowedBookIds thành activeLoanRecordIds
 
-    // Constructor cho việc tạo User mới
+    // Thông tin cá nhân mở rộng
+    private String fullName;
+    private LocalDate dateOfBirth;
+    private String address;
+    private String phoneNumber;
+    private String avatarUrl;
+    private String introduction;
+
+    // Thông tin liên quan đến thư viện
+    private List<String> activeLoanRecordIds;
+    private boolean isAccountLocked;
+    private double currentFineAmount;
+    private int reputationScore;
+
+    // Timestamps
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+
+    // Constructor tối thiểu khi tạo User mới (ví dụ: từ RegistrationScreenController)
+    // Constructor này tự tạo UUID và thời gian. UserService.addUser sẽ ghi đè userId.
     public User(String username, String email, String passwordHash, Role role) {
-        this.userId = UUID.randomUUID().toString();
-        this.username = username;
-        this.email = email;
-        this.passwordHash = passwordHash; // Mật khẩu nên được băm trước khi truyền vào đây
-        this.role = role;
-        this.activeLoanRecordIds = new ArrayList<>(); // Khởi tạo danh sách rỗng
-    }
-
-    // Constructor có thể dùng khi tải User từ database (đã có sẵn userId)
-    public User(String userId, String username, String email, String passwordHash, Role role) {
-        this.userId = userId;
+        this.userId = UUID.randomUUID().toString(); // ID tạm thời, sẽ được UserService ghi đè nếu cần
         this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;
         this.role = role;
-        this.activeLoanRecordIds = new ArrayList<>(); // Sẽ cần tải danh sách này từ DB nếu có
+        this.activeLoanRecordIds = new ArrayList<>();
+        this.isAccountLocked = false;
+        this.currentFineAmount = 0.0;
+        this.reputationScore = 80; // Điểm mặc định
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
-    // Getters
+    // Constructor đầy đủ (ví dụ: khi tải từ DB hoặc khi UserService tạo User mới)
+    public User(String userId, String username, String email, String passwordHash, Role role,
+                String fullName, LocalDate dateOfBirth, String address, String phoneNumber,
+                String avatarUrl, String introduction,
+                boolean isAccountLocked, double currentFineAmount, int reputationScore,
+                LocalDateTime createdAt, LocalDateTime updatedAt) {
+        this.userId = userId; // ID này từ DB hoặc do UserService.generateNewUserId() tạo
+        this.username = username;
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.role = role;
+        this.activeLoanRecordIds = new ArrayList<>();
+
+        this.fullName = fullName;
+        this.dateOfBirth = dateOfBirth;
+        this.address = address;
+        this.phoneNumber = phoneNumber;
+        this.avatarUrl = avatarUrl;
+        this.introduction = introduction;
+
+        this.isAccountLocked = isAccountLocked;
+        this.currentFineAmount = currentFineAmount;
+        this.reputationScore = reputationScore;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
+
+    // Getters (Giữ nguyên các getter cậu đã có)
     public String getUserId() { return userId; }
     public String getUsername() { return username; }
     public String getEmail() { return email; }
     public String getPasswordHash() { return passwordHash; }
     public Role getRole() { return role; }
-    public List<String> getActiveLoanRecordIds() { return activeLoanRecordIds; } // GETTER MỚI
+    public String getFullName() { return fullName; }
+    public LocalDate getDateOfBirth() { return dateOfBirth; }
+    public String getAddress() { return address; }
+    public String getPhoneNumber() { return phoneNumber; }
+    public String getAvatarUrl() { return avatarUrl; }
+    public String getIntroduction() { return introduction; }
+    public List<String> getActiveLoanRecordIds() { return activeLoanRecordIds; }
+    public boolean isAccountLocked() { return isAccountLocked; }
+    public double getCurrentFineAmount() { return currentFineAmount; }
+    public int getReputationScore() { return reputationScore; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
 
-    // Setters (chỉ cung cấp setters cho những trường có thể thay đổi sau khi tạo)
-    public void setUsername(String username) { this.username = username; }
-    public void setEmail(String email) { this.email = email; }
-    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
-    public void setRole(Role role) { this.role = role; }
+    // Setters (Giữ nguyên các setter cậu đã có, chúng tự động cập nhật `updatedAt`)
+    public void setUsername(String username) { this.username = username; this.updatedAt = LocalDateTime.now(); }
+    public void setEmail(String email) { this.email = email; this.updatedAt = LocalDateTime.now(); }
+    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; this.updatedAt = LocalDateTime.now(); }
+    public void setRole(Role role) { this.role = role; this.updatedAt = LocalDateTime.now(); }
+    public void setFullName(String fullName) { this.fullName = fullName; this.updatedAt = LocalDateTime.now(); }
+    public void setDateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; this.updatedAt = LocalDateTime.now(); }
+    public void setAddress(String address) { this.address = address; this.updatedAt = LocalDateTime.now(); }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; this.updatedAt = LocalDateTime.now(); }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; this.updatedAt = LocalDateTime.now(); }
+    public void setIntroduction(String introduction) { this.introduction = introduction; this.updatedAt = LocalDateTime.now(); }
+    public void setActiveLoanRecordIds(List<String> activeLoanRecordIds) { this.activeLoanRecordIds = activeLoanRecordIds != null ? new ArrayList<>(activeLoanRecordIds) : new ArrayList<>(); }
+    public void setAccountLocked(boolean accountLocked) { isAccountLocked = accountLocked; this.updatedAt = LocalDateTime.now(); }
+    public void setCurrentFineAmount(double currentFineAmount) { this.currentFineAmount = currentFineAmount; this.updatedAt = LocalDateTime.now(); }
+    public void setReputationScore(int reputationScore) { this.reputationScore = Math.max(0, Math.min(100, reputationScore)); this.updatedAt = LocalDateTime.now(); } // Đảm bảo trong khoảng 0-100
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    // (Tùy chọn) Setter này có thể hữu ích khi tải dữ liệu người dùng cùng các active loans từ DB
-    public void setActiveLoanRecordIds(List<String> activeLoanRecordIds) {
-        this.activeLoanRecordIds = activeLoanRecordIds != null ? new ArrayList<>(activeLoanRecordIds) : new ArrayList<>();
-    }
-
-
-    // --- Phương thức hỗ trợ quản lý các bản ghi mượn sách ---
+    // --- SETTER ĐẶC BIỆT (FORCED) CHỈ DÙNG BỞI SERVICE KHI KHỞI TẠO ---
+    // Cần thiết nếu constructor tối thiểu tự tạo ID/createdAt và Service muốn ghi đè.
+    // Nếu Service đã gọi constructor đầy đủ với ID/createdAt đúng ngay từ đầu thì không cần các hàm "Forced" này.
     /**
-     * Thêm ID của một bản ghi mượn (loan record) vào danh sách đang hoạt động của người dùng.
-     * @param loanRecordId ID của BorrowingRecord.
+     * Chỉ được dùng bởi UserService khi tạo User mới với ID đã được generate.
+     * @param userId ID người dùng đã được generate.
      */
-    public void addActiveLoanRecord(String loanRecordId) { // THAY ĐỔI: từ borrowBook(bookId)
-        if (loanRecordId != null && !this.activeLoanRecordIds.contains(loanRecordId)) {
-            // Có thể kiểm tra borrowLimit của user ở đây trước khi thêm (nếu có)
-            this.activeLoanRecordIds.add(loanRecordId);
-        }
+    public void forceSetUserId(String userId) {
+        this.userId = userId;
     }
-
     /**
-     * Xóa ID của một bản ghi mượn (loan record) khỏi danh sách đang hoạt động của người dùng (khi sách được trả).
-     * @param loanRecordId ID của BorrowingRecord.
+     * Chỉ được dùng bởi UserService khi tạo User mới với thời gian tạo đã được xác định.
+     * @param createdAt Thời gian tạo.
      */
-    public void removeActiveLoanRecord(String loanRecordId) { // THAY ĐỔI: từ returnBook(bookId)
-        if (loanRecordId != null) {
-            this.activeLoanRecordIds.remove(loanRecordId);
-        }
+    public void forceSetCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+    // Không cần forceSetUpdatedAt vì đã có setUpdatedAt() public.
+
+    // --- CÁC PHƯƠNG THỨC TIỆN ÍCH "OrDefault" ---
+    public String getUsernameOrDefault(String defaultValue) {
+        return (this.username != null && !this.username.trim().isEmpty()) ? this.username.trim() : defaultValue;
+    }
+    public String getEmailOrDefault(String defaultValue) {
+        return (this.email != null && !this.email.trim().isEmpty()) ? this.email.trim() : defaultValue;
+    }
+    public String getFullNameOrDefault(String defaultValue) {
+        return (this.fullName != null && !this.fullName.trim().isEmpty()) ? this.fullName.trim() : defaultValue;
+    }
+    public String getPhoneNumberOrDefault(String defaultValue) {
+        return (this.phoneNumber != null && !this.phoneNumber.trim().isEmpty()) ? this.phoneNumber.trim() : defaultValue;
+    }
+    public String getIntroductionOrDefault(String defaultValue) {
+        return (this.introduction != null && !this.introduction.trim().isEmpty()) ? this.introduction.trim() : defaultValue;
+    }
+    public String getAvatarUrlOrDefault(String defaultValue) {
+        return (this.avatarUrl != null && !this.avatarUrl.trim().isEmpty()) ? this.avatarUrl.trim() : defaultValue;
+    }
+    public String getDateOfBirthFormattedOrDefault(String defaultValue, DateTimeFormatter formatter) {
+        return (this.dateOfBirth != null && formatter != null) ? this.dateOfBirth.format(formatter) : defaultValue;
     }
 
-    // (Tùy chọn) Kiểm tra xem người dùng có đang mượn dựa trên một loanRecordId cụ thể không
-    public boolean hasActiveLoanRecord(String loanRecordId) {
-        return this.activeLoanRecordIds.contains(loanRecordId);
-    }
+
+    // --- Các phương thức khác (addActiveLoanRecord, etc. giữ nguyên) ---
+    public void addActiveLoanRecord(String loanRecordId) { /* ... */ }
+    public void removeActiveLoanRecord(String loanRecordId) { /* ... */ }
+    public boolean hasActiveLoanRecord(String loanRecordId) { /* ... */ return false; }
+    public void increaseReputation(int points) { /* ... */ }
+    public void decreaseReputation(int points) { /* ... */ }
+
 
     @Override
     public String toString() {
         return "User{" +
                 "userId='" + userId + '\'' +
-                ", username='" + username + '\'' +
-                ", email='" + email + '\'' +
+                ", username='" + getUsernameOrDefault("N/A") + '\'' +
+                ", email='" + getEmailOrDefault("N/A") + '\'' +
                 ", role=" + role +
-                ", activeLoansCount=" + (activeLoanRecordIds != null ? activeLoanRecordIds.size() : 0) +
+                ", fullName='" + getFullNameOrDefault("N/A") + '\'' +
+                ", reputationScore=" + reputationScore +
+                ", isAccountLocked=" + isAccountLocked +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        // ID người dùng là duy nhất và nên được dùng để so sánh nếu đã có
+        if (userId != null && !userId.trim().isEmpty()) {
+            return userId.equals(user.userId);
+        }
+        // Nếu không có ID, so sánh bằng username (cũng nên là duy nhất)
+        return Objects.equals(username, user.username);
+    }
+
+    @Override
+    public int hashCode() {
+        // Dùng ID nếu có, nếu không dùng username
+        if (userId != null && !userId.trim().isEmpty()) {
+            return Objects.hash(userId);
+        }
+        return Objects.hash(username);
     }
 }

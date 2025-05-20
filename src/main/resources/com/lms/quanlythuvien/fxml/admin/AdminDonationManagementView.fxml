@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane styleClass="subview-container-white" stylesheets="@/com/lms/quanlythuvien/css/styles.css" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.admin.AdminDonationManagementController">
+    <top>
+        <VBox styleClass="view-header-pane" alignment="CENTER_LEFT">
+            <padding><Insets bottom="15.0" left="20.0" right="20.0" top="15.0" /></padding>
+            <Label text="Quản Lý Sách Quyên Góp" styleClass="view-title"/>
+            <Label text="Xem xét và xử lý các yêu cầu quyên góp sách từ người dùng." styleClass="view-subtitle"/>
+        </VBox>
+    </top>
+    <center>
+        <VBox spacing="15.0" style="-fx-padding: 20px;">
+            <children>
+                <HBox spacing="10.0" alignment="CENTER_LEFT">
+                    <children>
+                        <Label text="Lọc theo trạng thái:" styleClass="label-regular"/>
+                        <ComboBox fx:id="donationStatusFilterComboBox" prefWidth="200.0" promptText="-- Tất cả trạng thái --"/>
+                        <TextField fx:id="donationSearchField" promptText="Tìm theo tên sách, người quyên góp..." HBox.hgrow="ALWAYS" styleClass="form-input"/>
+                        <Button fx:id="searchDonationsButton" text="Lọc/Tìm" styleClass="primary-button-small" onAction="#handleSearchDonationsAction"/>
+                        <Button fx:id="refreshDonationsButton" text="Làm mới" styleClass="secondary-button-small" onAction="#handleRefreshDonationsAction"/>
+                    </children>
+                </HBox>
+
+                <HBox spacing="10.0" alignment="CENTER_LEFT" style="-fx-padding-top: 5px; -fx-padding-bottom: 5px;">
+                    <children>
+                        <Label text="Với yêu cầu được chọn:" styleClass="label-regular-bold"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="approveDonationButton" text="Duyệt Yêu Cầu" styleClass="success-button-small" onAction="#handleApproveDonationAction" disable="true"/>
+                        <Button fx:id="rejectDonationButton" text="Từ Chối Yêu Cầu" styleClass="danger-button-small" onAction="#handleRejectDonationAction" disable="true"/>
+                    </children>
+                </HBox>
+
+                <TableView fx:id="donationsTableView" VBox.vgrow="ALWAYS" prefHeight="450.0">
+                    <columns>
+                        <TableColumn fx:id="requestIdColumn" prefWidth="100.0" text="Mã YC"/>
+                        <TableColumn fx:id="drBookNameColumn" prefWidth="200.0" text="Tên Sách Đề Xuất"/>
+                        <TableColumn fx:id="drAuthorNameColumn" prefWidth="150.0" text="Tác Giả Đề Xuất"/>
+                        <TableColumn fx:id="donatorNameColumn" prefWidth="150.0" text="Người Quyên Góp"/>
+                        <TableColumn fx:id="drRequestDateColumn" prefWidth="120.0" text="Ngày Gửi"/>
+                        <TableColumn fx:id="drStatusColumn" prefWidth="150.0" text="Trạng Thái"/>
+                        <TableColumn fx:id="donationActionsColumn" prefWidth="150.0" text="Hành Động" style="-fx-alignment: CENTER;"/>
+                    </columns>
+                    <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/></columnResizePolicy>
+                    <placeholder><Label text="Không có yêu cầu quyên góp nào." styleClass="placeholder-text"/></placeholder>
+                </TableView>
+            </children>
+        </VBox>
+    </center>
+</BorderPane>

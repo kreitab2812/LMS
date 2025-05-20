@@ -11,41 +11,44 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.lms.quanlythuvien.controllers.admin.BookManagementController"
-            style="-fx-padding: 20px;" stylesheets="@../../css/styles.css"> <top>
-    <VBox spacing="15"> <children>
-        <Label text="Quản lý Sách" styleClass="view-title"/> <HBox spacing="10" alignment="CENTER_LEFT">
-        <children>
-            <Button fx:id="addBookButton" text="Thêm Sách Mới" styleClass="primary-button" onAction="#handleAddBookAction"/>
-            <Button fx:id="editBookButton" text="Sửa Sách Chọn" styleClass="secondary-button" onAction="#handleEditBookAction" disable="true"/>
-            <Button fx:id="deleteBookButton" text="Xóa Sách Chọn" styleClass="danger-button" onAction="#handleDeleteBookAction" disable="true"/>
-            <Region HBox.hgrow="ALWAYS"/>
-            <TextField fx:id="searchInLibraryField" promptText="Tìm trong thư viện..." prefWidth="250" styleClass="form-input"/> <Button fx:id="searchInLibraryButton" text="Tìm kiếm" styleClass="primary-button-small" onAction="#handleSearchInLibraryAction"/> </children>
-    </HBox>
-    </children>
-        <padding>
-            <Insets bottom="15.0"/>
-        </padding>
-    </VBox>
-</top>
+<BorderPane styleClass="subview-container-white" stylesheets="@/com/lms/quanlythuvien/css/styles.css" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.admin.AdminBookManagementController">
+    <padding>
+        <Insets top="15.0" right="20.0" bottom="20.0" left="20.0" />
+    </padding>
+    <top>
+        <VBox spacing="15.0">
+            <children>
+                <Label text="Quản Lý Sách Thư Viện" styleClass="view-title"/>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <children>
+                        <Button fx:id="addBookButton" text="Thêm Sách Mới" styleClass="primary-button" onAction="#handleAddBookAction"/>
+                        <Button fx:id="editBookButton" text="Sửa Sách" styleClass="secondary-button" onAction="#handleEditBookAction" disable="true"/>
+                        <Button fx:id="deleteBookButton" text="Xóa Sách" styleClass="danger-button" onAction="#handleDeleteBookAction" disable="true"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <TextField fx:id="searchInLibraryField" promptText="Tìm theo tiêu đề, tác giả, ISBN..." prefWidth="300" styleClass="form-input-tab-search"/>
+                    </children>
+                </HBox>
+            </children>
+            <padding>
+                <Insets bottom="15.0"/>
+            </padding>
+        </VBox>
+    </top>
 
     <center>
-        <TableView fx:id="booksTableView" BorderPane.alignment="CENTER">
+        <TableView fx:id="booksTableView" BorderPane.alignment="CENTER" VBox.vgrow="ALWAYS">
             <columns>
                 <TableColumn fx:id="idColumn" prefWidth="120.0" text="Mã Sách/ISBN"/>
                 <TableColumn fx:id="titleColumn" prefWidth="250.0" text="Tiêu Đề"/>
-                <TableColumn fx:id="authorsColumn" prefWidth="180.0" text="Tác giả"/>
+                <TableColumn fx:id="authorsColumn" prefWidth="180.0" text="Tác Giả"/>
                 <TableColumn fx:id="publisherColumn" prefWidth="150.0" text="Nhà Xuất Bản"/>
                 <TableColumn fx:id="publishedDateColumn" prefWidth="100.0" text="Năm XB"/>
-                <TableColumn fx:id="quantityColumn" prefWidth="100.0" text="SL Có Sẵn"/>
-                <TableColumn fx:id="locationColumn" prefWidth="120.0" text="Vị Trí"/>
+                <TableColumn fx:id="quantityColumn" prefWidth="100.0" text="Hiện Có" style="-fx-alignment: CENTER;"/>
+                <TableColumn fx:id="locationColumn" prefWidth="120.0" text="Vị Trí Kệ"/>
             </columns>
-            <columnResizePolicy>
-                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
-            </columnResizePolicy>
+            <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/></columnResizePolicy>
             <placeholder>
-                <Label text="Không có sách nào trong thư viện hoặc không khớp với tìm kiếm."/>
+                <Label text="Không có sách nào trong thư viện hoặc không khớp với tìm kiếm." styleClass="placeholder-text"/>
             </placeholder>
         </TableView>
     </center>

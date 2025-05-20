@@ -65,11 +65,17 @@
                     </content>
                 </Tab>
 
-                <Tab fx:id="favouriteBooksTab" text="Sách Yêu Thích">
+                <Tab fx:id="favoriteBooksTab" text="Sách Yêu Thích">
                     <content>
-                        <VBox alignment="CENTER" style="-fx-padding: 20px;">
-                            <Label text="Tính năng 'Sách Yêu Thích' sẽ sớm được cập nhật!" styleClass="placeholder-text-large"/>
-                        </VBox>
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="tab-content-scrollpane">
+                            <content>
+                                <TilePane fx:id="favoriteBooksTilePane" hgap="20" vgap="20" styleClass="book-tile-pane" prefColumns="0">
+                                    <padding>
+                                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+                                    </padding>
+                                </TilePane>
+                            </content>
+                        </ScrollPane>
                     </content>
                 </Tab>
             </tabs>

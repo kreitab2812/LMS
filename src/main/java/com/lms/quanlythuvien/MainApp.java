@@ -1,161 +1,212 @@
-package com.lms.quanlythuvien; // Hoặc package của bạn
+package com.lms.quanlythuvien;
 
 import com.lms.quanlythuvien.utils.database.DatabaseManager;
 import javafx.application.Application;
+import javafx.application.Platform; // Thêm để dùng Platform.exit() nếu cần
 import javafx.fxml.FXMLLoader;
-import javafx.geometry.Rectangle2D; // <<<--- THÊM IMPORT NÀY
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;   // Thêm để hiển thị lỗi nghiêm trọng
+import javafx.scene.control.ButtonType; // Thêm cho Alert
+import javafx.scene.image.Image;     // Thêm để set icon cho ứng dụng
 import javafx.scene.text.Font;
-import javafx.stage.Screen; // <<<--- THÊM IMPORT NÀY
+import javafx.stage.Screen;
 import javafx.stage.Stage;
-// import javafx.scene.control.Alert;
-// import javafx.application.Platform;
 
 import java.io.IOException;
+import java.io.InputStream; // Thêm để load icon
 import java.net.URL;
 
 public class MainApp extends Application {
 
     private static Stage primaryStage;
+    private static final String APP_TITLE = "Quản Lý Thư Viện - UETLIB"; // Tên ứng dụng
 
     @Override
     public void start(Stage stage) {
-        System.out.println("DEBUG_MAINAPP: MainApp start() called.");
+        System.out.println("INFO_MAINAPP: Application starting...");
         primaryStage = stage;
-        primaryStage.setTitle("UET-VNU Library Management");
+        primaryStage.setTitle(APP_TITLE);
 
-        // TẢI CUSTOM FONTS
-        try {
-            Font.loadFont(getClass().getResourceAsStream("/com/lms/quanlythuvien/fonts/Comfortaa-Regular.ttf"), 10);
-            System.out.println("DEBUG_MAINAPP: Comfortaa font loaded successfully.");
+        // Set application icon (thay "app_icon.png" bằng tên file icon của cậu)
+        try (InputStream iconStream = getClass().getResourceAsStream("/com/lms/quanlythuvien/images/app_icon.png")) {
+            if (iconStream != null) {
+                primaryStage.getIcons().add(new Image(iconStream));
+            } else {
+                System.err.println("WARN_MAINAPP: Application icon not found.");
+            }
         } catch (Exception e) {
-            System.err.println("ERROR_MAINAPP: Could not load Comfortaa font: " + e.getMessage());
+            System.err.println("ERROR_MAINAPP: Failed to load application icon: " + e.getMessage());
         }
+
+        // TẢI CUSTOM FONTS (nếu có)
+        // Ví dụ: Font chữ Comfortaa
+        try {
+            // Đường dẫn nên bắt đầu bằng "/" nếu từ root của resources
+            InputStream fontStream = getClass().getResourceAsStream("/com/lms/quanlythuvien/fonts/Comfortaa-Regular.ttf");
+            if (fontStream != null) {
+                Font.loadFont(fontStream, 10); // Kích thước không quan trọng khi load, chỉ cần load được font
+                System.out.println("INFO_MAINAPP: Custom font 'Comfortaa-Regular.ttf' loaded successfully.");
+                fontStream.close(); // Nhớ đóng stream
+            } else {
+                System.err.println("WARN_MAINAPP: Custom font 'Comfortaa-Regular.ttf' not found.");
+            }
+        } catch (Exception e) {
+            System.err.println("ERROR_MAINAPP: Could not load custom font: " + e.getMessage());
+        }
+
 
         // KHỞI TẠO DATABASE
         try {
-            System.out.println("DEBUG_MAINAPP: Initializing database by getting instance...");
-            DatabaseManager.getInstance(); // <<--- SỬA THÀNH DÒNG NÀY
-            // Việc gọi getInstance() lần đầu sẽ tự động chạy initializeDatabase() bên trong DatabaseManager
-            System.out.println("DEBUG_MAINAPP: Database initialization triggered via Singleton instantiation.");
-        } catch (Exception e) { // Bắt Exception chung nếu getInstance() hoặc constructor có thể ném lỗi (hiếm khi nếu chỉ là SQLException đã được xử lý bên trong)
-            // Hoặc cụ thể hơn là RuntimeException nếu DatabaseManager ném ra khi khởi tạo thất bại.
-            System.err.println("CRITICAL_MAINAPP: Failed to initialize database via DatabaseManager.getInstance()!");
+            System.out.println("INFO_MAINAPP: Initializing database...");
+            DatabaseManager.getInstance(); // Gọi getInstance() để trigger constructor và initializeDatabase()
+            System.out.println("INFO_MAINAPP: Database initialization process completed.");
+        } catch (RuntimeException e) { // Bắt RuntimeException mà DatabaseManager có thể ném ra
+            System.err.println("CRITICAL_MAINAPP: Database initialization failed. Application will exit.");
             e.printStackTrace();
-            // Hiển thị Alert cho người dùng và thoát ứng dụng nếu DB là thiết yếu
-            // Alert alert = new Alert(Alert.AlertType.ERROR, "Không thể khởi tạo cơ sở dữ liệu. Ứng dụng sẽ thoát.");
-            // alert.showAndWait();
-            // Platform.exit();
+            showCriticalErrorAndExit("Lỗi Khởi Tạo Cơ Sở Dữ Liệu",
+                    "Không thể kết nối hoặc khởi tạo cơ sở dữ liệu.\n" +
+                            "Ứng dụng không thể tiếp tục. Vui lòng kiểm tra lại file 'library.db'.\n" +
+                            "Chi tiết lỗi: " + e.getMessage());
+            return; // Không load splash screen nếu DB lỗi
         }
 
-        // KHÔNG CÒN primaryStage.setMaximized(true); NỮA
-
-        System.out.println("DEBUG_MAINAPP: Loading splash screen...");
-        loadSplashScreen(); // Phương thức này sẽ xử lý việc show và căn giữa scene đầu tiên
-        System.out.println("DEBUG_MAINAPP: MainApp start() finished.");
+        System.out.println("INFO_MAINAPP: Loading splash screen...");
+        loadSplashScreen(); // Load và hiển thị màn hình splash
+        System.out.println("INFO_MAINAPP: Application start() method finished.");
     }
 
-    // Phương thức mới để căn giữa Stage
-    private static void centerStageOnScreen(Stage stage) {
+    private static void centerStageOnScreen(Stage stage, Parent rootNode) {
         if (stage == null) return;
 
-        // Lấy kích thước màn hình chính (có tính đến thanh taskbar, v.v.)
-        Rectangle2D primaryScreenBounds = Screen.getPrimary().getVisualBounds();
+        // Lấy kích thước màn hình chính
+        Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
 
-        // Đảm bảo stage có kích thước hợp lệ trước khi căn giữa
-        // (getWidth/Height có thể trả về NaN nếu stage chưa được hiển thị hoặc chưa có scene)
-        double stageWidth = stage.getWidth();
-        double stageHeight = stage.getHeight();
+        // Lấy kích thước của scene từ rootNode nếu có, hoặc từ stage nếu đã có scene
+        double sceneWidth = (rootNode != null && rootNode.prefWidth(-1) > 0) ? rootNode.prefWidth(-1) : stage.getWidth();
+        double sceneHeight = (rootNode != null && rootNode.prefHeight(-1) > 0) ? rootNode.prefHeight(-1) : stage.getHeight();
 
-        if (Double.isNaN(stageWidth) || Double.isNaN(stageHeight) || stageWidth <= 0 || stageHeight <= 0) {
-            // Nếu kích thước chưa sẵn sàng, thử gọi sizeToScene() một lần nữa
-            // Điều này thường xảy ra nếu stage chưa được show()
-            stage.sizeToScene();
-            stageWidth = stage.getWidth();
-            stageHeight = stage.getHeight();
+        // Nếu stage chưa có kích thước (thường xảy ra trước khi show), thử sizeToScene
+        if (Double.isNaN(sceneWidth) || Double.isNaN(sceneHeight) || sceneWidth <= 0 || sceneHeight <= 0) {
+            if (stage.getScene() != null) {
+                stage.sizeToScene(); // Cập nhật kích thước stage theo scene hiện tại
+                sceneWidth = stage.getWidth();
+                sceneHeight = stage.getHeight();
+            }
         }
 
-        // Kiểm tra lại sau khi sizeToScene()
-        if (Double.isNaN(stageWidth) || Double.isNaN(stageHeight) || stageWidth <= 0 || stageHeight <= 0) {
-            System.err.println("DEBUG_MAINAPP_CENTER: Stage width/height not properly initialized for centering. Centering skipped.");
-            return; // Không thể căn giữa nếu không có kích thước
+        // Nếu vẫn không có kích thước hợp lệ, không căn giữa
+        if (Double.isNaN(sceneWidth) || Double.isNaN(sceneHeight) || sceneWidth <= 0 || sceneHeight <= 0) {
+            System.err.println("WARN_MAINAPP_CENTER: Stage/Scene width/height not properly initialized for centering. Centering skipped.");
+            return;
         }
 
-        // Tính toán vị trí
-        double posX = primaryScreenBounds.getMinX() + (primaryScreenBounds.getWidth() - stageWidth) / 2;
-        double posY = primaryScreenBounds.getMinY() + (primaryScreenBounds.getHeight() - stageHeight) / 2;
-
-        stage.setX(posX);
-        stage.setY(posY);
-        System.out.println("DEBUG_MAINAPP_CENTER: Stage centered. X=" + stage.getX() + ", Y=" + stage.getY() + ", W=" + stageWidth + ", H=" + stageHeight);
+        stage.setX((screenBounds.getWidth() - sceneWidth) / 2 + screenBounds.getMinX());
+        stage.setY((screenBounds.getHeight() - sceneHeight) / 2 + screenBounds.getMinY());
+        System.out.println("DEBUG_MAINAPP_CENTER: Stage centered. X=" + stage.getX() + ", Y=" + stage.getY() + ", W=" + sceneWidth + ", H=" + sceneHeight);
     }
 
 
     public void loadSplashScreen() {
         try {
             String splashPath = "/com/lms/quanlythuvien/fxml/common/SplashScreen.fxml";
-            URL fxmlLocation = getClass().getResource(splashPath);
+            URL fxmlLocation = MainApp.class.getResource(splashPath); // Dùng MainApp.class để an toàn hơn
 
             if (fxmlLocation == null) {
-                System.err.println("ERROR_MAINAPP: Cannot find Splash Screen FXML file: " + splashPath);
-                loadScene("common/LoginScreen.fxml"); // Load Login nếu Splash lỗi (loadScene cũng sẽ căn giữa)
+                System.err.println("CRITICAL_MAINAPP_SPLASH: SplashScreen FXML not found: " + splashPath);
+                loadScene("common/LoginScreen.fxml"); // Fallback nếu splash lỗi
                 return;
             }
             FXMLLoader loader = new FXMLLoader(fxmlLocation);
             Parent root = loader.load();
             Scene scene = new Scene(root);
+            // Áp dụng CSS cho scene (nếu SplashScreen có style riêng hoặc để đảm bảo)
+            // scene.getStylesheets().add(getClass().getResource("/com/lms/quanlythuvien/css/styles.css").toExternalForm());
 
             primaryStage.setScene(scene);
-            // KHÔNG CÒN primaryStage.setMaximized(true);
 
             if (!primaryStage.isShowing()) {
-                primaryStage.show(); // Hiển thị Stage lần đầu
+                primaryStage.show(); // Hiển thị stage LẦN ĐẦU TIÊN
             }
-            primaryStage.sizeToScene(); // Đảm bảo Stage có kích thước của Scene
-            centerStageOnScreen(primaryStage); // Căn giữa Stage
+            // Quan trọng: sizeToScene() sau khi setScene và TRƯỚC khi show() hoặc ngay sau show() lần đầu.
+            // Đối với splash screen, kích thước thường cố định trong FXML.
+            primaryStage.sizeToScene();
+            centerStageOnScreen(primaryStage, root); // Căn giữa dựa trên kích thước của root node
 
-            System.out.println("DEBUG_MAINAPP: Splash screen loaded successfully.");
+            System.out.println("INFO_MAINAPP: Splash screen loaded successfully.");
 
         } catch (IOException e) {
-            System.err.println("ERROR_MAINAPP: Error loading Splash Screen FXML: " + e.getMessage());
+            System.err.println("CRITICAL_MAINAPP_SPLASH_IO: Error loading SplashScreen FXML: " + e.getMessage());
             e.printStackTrace();
-            System.out.println("DEBUG_MAINAPP: Attempting to load LoginScreen directly due to SplashScreen error.");
-            loadScene("common/LoginScreen.fxml"); // loadScene cũng sẽ căn giữa
+            loadScene("common/LoginScreen.fxml"); // Fallback
         }
     }
 
-    public static void loadScene(String fxmlFile) { // fxmlFile là đường dẫn tương đối từ thư mục /fxml/
+    public static void loadScene(String fxmlFile) {
         try {
             String fullPath = "/com/lms/quanlythuvien/fxml/" + fxmlFile;
-            System.out.println("DEBUG_MAINAPP_LOADSCENE: Attempting to load FXML from: " + fullPath);
+            System.out.println("INFO_MAINAPP_LOADSCENE: Loading FXML: " + fullPath);
 
             URL fxmlLocation = MainApp.class.getResource(fullPath);
             if (fxmlLocation == null) {
-                System.err.println("ERROR_MAINAPP_LOADSCENE: Cannot find FXML file: " + fullPath);
+                System.err.println("CRITICAL_MAINAPP_LOADSCENE: FXML file not found: " + fullPath);
+                showCriticalErrorAndExit("Lỗi Tải Giao Diện", "Không tìm thấy tệp giao diện chính: " + fxmlFile);
                 return;
             }
             FXMLLoader loader = new FXMLLoader(fxmlLocation);
             Parent root = loader.load();
-            Scene scene = new Scene(root);
 
-            primaryStage.setScene(scene);
-            // KHÔNG CÒN primaryStage.setMaximized(true);
-
-            primaryStage.sizeToScene(); // Cập nhật kích thước Stage theo Scene mới
-            centerStageOnScreen(primaryStage); // Căn giữa Stage
-
-            if (!primaryStage.isShowing()) { // Nếu Stage chưa hiển thị (ví dụ, loadScene được gọi từ start() khi splash lỗi)
-                primaryStage.show();
-                // centerStageOnScreen(primaryStage); // Có thể gọi lại nếu show lần đầu ở đây, nhưng thường là đã đủ
+            Scene currentScene = primaryStage.getScene();
+            if (currentScene == null) { // Nếu chưa có scene nào (ví dụ khi splash lỗi và gọi trực tiếp)
+                currentScene = new Scene(root);
+                primaryStage.setScene(currentScene);
+            } else {
+                currentScene.setRoot(root); // Thay đổi root của scene hiện tại để giữ nguyên Stage
             }
-            System.out.println("DEBUG_MAINAPP_LOADSCENE: Scene " + fxmlFile + " loaded successfully.");
+
+            // Áp dụng lại stylesheet cho scene nếu cần (thường thì stylesheet đã được load từ FXML)
+            // Hoặc đảm bảo FXML đã link đúng stylesheet
+            // String cssPath = MainApp.class.getResource("/com/lms/quanlythuvien/css/styles.css").toExternalForm();
+            // if (!currentScene.getStylesheets().contains(cssPath)) {
+            //     currentScene.getStylesheets().add(cssPath);
+            // }
+
+
+            // Căn giữa sau khi đã có root mới và scene đã được cập nhật
+            // Stage cần được hiển thị để getWidth/getHeight chính xác nếu Scene thay đổi kích thước
+            primaryStage.sizeToScene(); // Cập nhật kích thước Stage theo Scene/Root mới
+            centerStageOnScreen(primaryStage, root);
+
+            if (!primaryStage.isShowing()) {
+                primaryStage.show();
+            }
+            System.out.println("INFO_MAINAPP_LOADSCENE: Scene " + fxmlFile + " loaded successfully.");
 
         } catch (IOException e) {
-            System.err.println("ERROR_MAINAPP_LOADSCENE: Error loading scene " + fxmlFile + ": " + e.getMessage());
+            System.err.println("CRITICAL_MAINAPP_LOADSCENE_IO: Error loading scene " + fxmlFile + ": " + e.getMessage());
             e.printStackTrace();
+            showCriticalErrorAndExit("Lỗi Tải Giao Diện", "Không thể tải giao diện: " + fxmlFile + "\nChi tiết: " + e.getMessage());
         }
     }
+
+    private static void showCriticalErrorAndExit(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        // Optional: Apply styles to the alert
+        // try {
+        //     URL cssUrl = MainApp.class.getResource("/com/lms/quanlythuvien/css/styles.css");
+        //     if (cssUrl != null && alert.getDialogPane() != null) {
+        //         alert.getDialogPane().getStylesheets().add(cssUrl.toExternalForm());
+        //     }
+        // } catch (Exception e) { /* ignore */ }
+        alert.showAndWait();
+        Platform.exit();
+        System.exit(1); // Đảm bảo ứng dụng thoát hoàn toàn
+    }
+
 
     public static void main(String[] args) {
         launch(args);

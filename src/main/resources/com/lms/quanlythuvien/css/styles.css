@@ -894,3 +894,226 @@
     -fx-text-fill: #555;
     -fx-padding-bottom: 10px;
 }
+
+.dialog-pane-bill {
+    -fx-background-color: #ffffff;
+}
+.dialog-title {
+    -fx-font-size: 1.5em; /* ~18px */
+    -fx-font-weight: bold;
+    -fx-text-fill: #333;
+}
+.form-label-bill {
+    -fx-font-weight: bold;
+    -fx-text-fill: #444;
+    -fx-padding-right: 5px;
+}
+.form-value-bill {
+    -fx-text-fill: #222;
+}
+.form-value-bill-due {
+    -fx-font-weight: bold;
+    -fx-text-fill: #D8000C; /* Màu đỏ cho ngày hẹn trả */
+}
+.label-regular-bold {
+    -fx-font-weight: bold;
+}
+.label-small-italic {
+    -fx-font-size: 0.8em;
+    -fx-font-style: italic;
+    -fx-text-fill: #777;
+}
+
+.author-detail-content-container {
+    -fx-background-color: #ffffff; /* Nền trắng cho phần nội dung chính của view này */
+}
+
+.author-detail-avatar {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 1, 2);
+    /* Có thể thêm border hoặc làm tròn nếu muốn */
+    -fx-background-color: #e0e0e0; /* Màu nền placeholder cho ảnh */
+}
+
+.author-detail-name-large {
+    -fx-font-size: 1.8em; /* ~24px */
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+    -fx-padding-bottom: 5px;
+}
+
+/* detail-field-label-prominent, detail-field-value, detail-section-title, text-area-description có thể dùng lại từ BookDetailView */
+/* Hoặc tạo mới nếu muốn style khác biệt */
+
+.inner-scroll-pane { /* ScrollPane cho danh sách sách của tác giả */
+    -fx-background-color: transparent;
+}
+.inner-scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.subview-container-white {
+    -fx-background-color: #ffffff;
+}
+.info-stat-card {
+    -fx-background-color: #ffffff;
+    -fx-padding: 15px;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 5, 0, 1, 1);
+    -fx-alignment: center;
+}
+.stat-title {
+    -fx-font-size: 0.9em;
+    -fx-text-fill: #555;
+    -fx-padding-bottom: 5px;
+}
+.stat-value {
+    -fx-font-size: 1.8em;
+    -fx-font-weight: bold;
+    -fx-text-fill: #537cac;
+}
+.sidebar-admin { /* Style cho sidebar của Admin */
+    -fx-background-color: #ffffff;
+    -fx-padding: 20px 10px 20px 10px;
+    -fx-border-color: transparent #e0e0e0 transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+}
+.dialog-form-pane {
+    -fx-background-color: #ffffff;
+}
+.dialog-form-title {
+    -fx-font-size: 1.4em;
+    -fx-font-weight: bold;
+    -fx-padding-bottom: 10px;
+}
+/* ... các style class khác cậu đã có hoặc cần thêm ... */
+
+.admin-book-card {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d0d7de;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 4, 0, 0, 1);
+}
+.admin-book-card:hover {
+    -fx-border-color: #0969da; /* Màu xanh khi hover */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 6, 0, 0, 2);
+}
+.book-card-title-admin {
+    -fx-font-size: 1.05em;
+    -fx-font-weight: 600; /* Semibold */
+    -fx-text-fill: #0969da; /* Màu xanh cho tiêu đề */
+    -fx-cursor: hand; /* Gợi ý có thể click để xem chi tiết */
+}
+.book-card-author-admin {
+    -fx-font-size: 0.9em;
+    -fx-text-fill: #57606a;
+}
+.book-card-isbn-admin {
+    -fx-font-size: 0.8em;
+    -fx-text-fill: #6e7781;
+}
+.book-card-info-label-admin {
+    -fx-font-size: 0.85em;
+    -fx-text-fill: #57606a;
+    -fx-font-weight: normal;
+}
+.book-card-info-value-admin {
+    -fx-font-size: 0.85em;
+    -fx-text-fill: #24292f;
+    -fx-font-weight: 600;
+}
+.admin-book-card-actions-section {
+    -fx-padding: 8px 0 0 0;
+    -fx-border-color: #d8dee4 transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+    -fx-margin-top: 8px;
+}
+.link-button-admin { /* Cho các nút dạng link */
+    -fx-background-color: transparent;
+    -fx-text-fill: #0969da; /* Màu xanh link */
+    -fx-padding: 3px 5px;
+    -fx-font-size: 0.9em;
+    -fx-cursor: hand;
+    -fx-border-color: transparent;
+}
+.link-button-admin:hover {
+    -fx-underline: true;
+}
+
+.admin-author-card {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e0e0e0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 4, 0, 0, 1);
+    -fx-alignment: center;
+}
+.admin-author-card:hover {
+    -fx-border-color: #0969da;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 6, 0, 0, 2);
+}
+.author-card-avatar-admin { /* Có thể dùng chung với .author-card-avatar của User */
+    -fx-border-radius: 50%;
+    -fx-background-radius: 50%;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0, 0, 1);
+    -fx-background-color: #f0f0f0; /* Màu nền placeholder */
+}
+.author-card-name-admin {
+    -fx-font-size: 1.1em;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+    -fx-text-alignment: center;
+}
+.author-card-bookcount-admin {
+    -fx-font-size: 0.85em;
+    -fx-text-fill: #555;
+    -fx-text-alignment: center;
+}
+.admin-tilepane-scrollpane .viewport { /* Để nền viewport của scrollpane chứa tilepane là trong suốt */
+    -fx-background-color: transparent;
+}
+.author-tile-pane-admin { /* TilePane chứa các card tác giả */
+    -fx-background-color: transparent; /* Nền trong suốt để lộ nền của scrollpane hoặc cha */
+}
+
+.locked-account-pane {
+    -fx-background-color: #ffebee; /* Màu nền đỏ nhạt cảnh báo */
+}
+.locked-content-box {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d32f2f; /* Viền đỏ đậm */
+    -fx-border-width: 2px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 3);
+    -fx-max-width: 500px;
+}
+.locked-title-label {
+    -fx-font-size: 1.6em; /* ~20px */
+    -fx-font-weight: bold;
+    -fx-text-fill: #c62828; /* Màu đỏ đậm hơn */
+}
+.locked-reason-label {
+    -fx-font-size: 1.05em;
+    -fx-text-fill: #444444;
+}
+.label-bold-section { /* Tiêu đề cho mục sách quá hạn */
+    -fx-font-weight: bold;
+    -fx-padding-top: 10px;
+}
+.compact-list-view-locked .list-cell {
+    -fx-padding: 3px 5px;
+    -fx-font-size: 0.9em;
+}
+.locked-fine-label {
+    -fx-font-size: 1.2em;
+    -fx-font-weight: bold;
+    -fx-text-fill: #e53935; /* Màu đỏ cho tiền phạt */
+    -fx-padding: 8px 0;
+}
+.locked-instruction-label {
+    -fx-font-size: 0.95em;
+    -fx-text-fill: #333333;
+}

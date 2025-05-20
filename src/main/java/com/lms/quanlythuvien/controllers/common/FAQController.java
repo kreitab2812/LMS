@@ -3,11 +3,10 @@ package com.lms.quanlythuvien.controllers.common;
 import com.lms.quanlythuvien.models.system.FAQItem; // FAQ tĩnh cũ
 import com.lms.quanlythuvien.models.system.UserQuestion; // Model mới cho câu hỏi của user
 import com.lms.quanlythuvien.models.user.User;
-import com.lms.quanlythuvien.services.system.UserQuestionService; // Service mới
+import com.lms.quanlythuvien.services.user.UserQuestionService; // Service mới
 import com.lms.quanlythuvien.services.user.UserService; // Để lấy tên user nếu cần
 import com.lms.quanlythuvien.utils.session.SessionManager;
 
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -21,7 +20,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.text.TextFlow;
 
 import java.net.URL;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

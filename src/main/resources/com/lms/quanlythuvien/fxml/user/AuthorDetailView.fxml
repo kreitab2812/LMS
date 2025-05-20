@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.TilePane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?> <BorderPane fx:id="authorDetailRootPane" prefWidth="800.0" maxWidth="900.0" styleClass="subview-container-white" stylesheets="@/com/lms/quanlythuvien/css/styles.css" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.user.AuthorDetailController">
+    <top>
+        <VBox alignment="CENTER_LEFT" styleClass="view-header-pane">
+            <padding>
+                <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
+            </padding>
+            <Label text="Thông Tin Chi Tiết Tác Giả" styleClass="view-title" />
+            <Label fx:id="authorNameHeaderLabel" text="Tên Tác Giả Sẽ Hiển Thị Ở Đây" styleClass="view-subtitle"/>
+        </VBox>
+    </top>
+
+    <center>
+        <ScrollPane fitToWidth="true" style="-fx-background-color: transparent; -fx-background: transparent;" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED">
+            <content>
+                <VBox spacing="20.0" styleClass="author-detail-content-container"> <padding>
+                    <Insets top="20.0" right="30.0" bottom="20.0" left="30.0" />
+                </padding>
+
+                    <HBox spacing="30.0" alignment="TOP_LEFT" styleClass="content-card">
+                        <padding><Insets top="20.0" right="25.0" bottom="20.0" left="25.0" /></padding>
+                        <ImageView fx:id="authorAvatarImageView" fitHeight="200.0" fitWidth="150.0" pickOnBounds="true" preserveRatio="true" styleClass="author-detail-avatar">
+                        </ImageView>
+                        <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                            <Label fx:id="authorNameLabel" styleClass="author-detail-name-large" text="Tên Tác Giả Lớn">
+                                <font><Font name="System Bold" size="22.0" /></font> </Label>
+                            <HBox spacing="5.0" alignment="CENTER_LEFT">
+                                <Label text="Năm sinh:" styleClass="detail-field-label-prominent" minWidth="100.0"/>
+                                <Label fx:id="authorDobLabel" styleClass="detail-field-value" text="N/A"/>
+                            </HBox>
+                            <HBox spacing="5.0" alignment="CENTER_LEFT">
+                                <Label text="Năm mất:" styleClass="detail-field-label-prominent" minWidth="100.0"/>
+                                <Label fx:id="authorDodLabel" styleClass="detail-field-value" text="N/A"/>
+                            </HBox>
+                            <HBox spacing="5.0" alignment="CENTER_LEFT">
+                                <Label text="Giới tính:" styleClass="detail-field-label-prominent" minWidth="100.0"/>
+                                <Label fx:id="authorGenderLabel" styleClass="detail-field-value" text="N/A"/>
+                            </HBox>
+                            <HBox spacing="5.0" alignment="CENTER_LEFT">
+                                <Label text="Quốc tịch:" styleClass="detail-field-label-prominent" minWidth="100.0"/>
+                                <Label fx:id="authorNationalityLabel" styleClass="detail-field-value" text="N/A" wrapText="true"/>
+                            </HBox>
+                            <HBox spacing="5.0" alignment="CENTER_LEFT">
+                                <Label text="Nơi sinh:" styleClass="detail-field-label-prominent" minWidth="100.0"/>
+                                <Label fx:id="authorPlaceOfBirthLabel" styleClass="detail-field-value" text="N/A" wrapText="true"/>
+                            </HBox>
+                        </VBox>
+                    </HBox>
+
+                    <VBox spacing="8.0" styleClass="content-card">
+                        <padding><Insets top="15.0" right="15.0" bottom="15.0" left="15.0" /></padding>
+                        <Label text="Tiểu sử:" styleClass="detail-section-title"/>
+                        <TextArea fx:id="authorBiographyArea" editable="false" wrapText="true" prefRowCount="8" styleClass="text-area-description"/>
+                    </VBox>
+
+                    <Separator prefWidth="200.0">
+                        <VBox.margin><Insets top="10.0" bottom="10.0"/></VBox.margin>
+                    </Separator>
+
+                    <VBox spacing="10.0">
+                        <Label text="CÁC TÁC PHẨM TẠI THƯ VIỆN" styleClass="view-title-user-section"/>
+                        <ScrollPane fx:id="authorBooksScrollPane" fitToWidth="true" prefHeight="350.0" hbarPolicy="NEVER" styleClass="inner-scroll-pane">
+                            <content>
+                                <TilePane fx:id="authorBooksTilePane" hgap="15.0" vgap="15.0" styleClass="book-tile-pane" prefColumns="0">
+                                    <padding>
+                                        <Insets top="10.0" bottom="10.0" left="5.0" right="5.0" /> </padding>
+                                </TilePane>
+                            </content>
+                        </ScrollPane>
+                        <Label fx:id="noBooksByAuthorLabel" text="Không có tác phẩm nào của tác giả này trong thư viện."
+                               styleClass="placeholder-text-tilepane" managed="false" visible="false"/>
+                    </VBox>
+                </VBox>
+            </content>
+        </ScrollPane>
+    </center>
+    <bottom>
+        <HBox alignment="CENTER_RIGHT" style="-fx-padding: 15px 30px;">
+            <Button fx:id="closeAuthorDetailButton" text="Đóng" onAction="#handleCloseAuthorDetailAction" styleClass="secondary-button"/>
+        </HBox>
+    </bottom>
+</BorderPane>

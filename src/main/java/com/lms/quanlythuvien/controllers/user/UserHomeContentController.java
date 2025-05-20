@@ -23,21 +23,15 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 
+import java.io.File; // Thêm cho loadUserAvatar
 import java.io.InputStream;
 import java.net.URL;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
-import java.util.ResourceBundle;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class UserHomeContentController implements Initializable {
@@ -54,14 +48,14 @@ public class UserHomeContentController implements Initializable {
 
     //<editor-fold desc="FXML Injections - Charts">
     @FXML private BarChart<Number, String> loanHistoryLast14DaysChart;
-    @FXML private CategoryAxis dateAxis14Days;
     @FXML private NumberAxis loanCountAxis14Days;
-    @FXML private Label loanHistoryChartPlaceholder; // << THÊM CHO PLACEHOLDER
+    @FXML private CategoryAxis dateAxis14Days;
+    @FXML private Label loanHistoryChartPlaceholder;
 
     @FXML private BarChart<Number, String> loanedGenresChart;
-    @FXML private CategoryAxis genreCategoryAxis;
     @FXML private NumberAxis genreLoanCountAxis;
-    @FXML private Label loanedGenresChartPlaceholder; // << THÊM CHO PLACEHOLDER
+    @FXML private CategoryAxis genreCategoryAxis;
+    @FXML private Label loanedGenresChartPlaceholder;
     //</editor-fold>
 
     //<editor-fold desc="FXML Injections - Due Soon & Quote">
@@ -75,87 +69,97 @@ public class UserHomeContentController implements Initializable {
     private BookManagementService bookManagementService;
     private User currentUser;
     private List<Quote> quotesList;
-
-    public UserHomeContentController() {
-        borrowingRecordService = BorrowingRecordService.getInstance();
-        bookManagementService = BookManagementService.getInstance();
-        initializeQuotes();
-    }
+    private final Random random = new Random();
+    private final DateTimeFormatter displayDateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        borrowingRecordService = BorrowingRecordService.getInstance();
+        bookManagementService = BookManagementService.getInstance();
         currentUser = SessionManager.getInstance().getCurrentUser();
+        initializeQuotes();
 
-        // Thiết lập placeholder cho ListView (BarChart sẽ xử lý placeholder riêng)
         if (dueSoonListView != null) {
-            dueSoonListView.setPlaceholder(new Label("Không có sách nào sắp đến hạn trong 5 ngày tới."));
+            dueSoonListView.setPlaceholder(new Label("Không có sách nào sắp đến hạn trả."));
         }
-
-        // Ban đầu ẩn chart, hiện placeholder của chart
         setChartVisibility(loanHistoryLast14DaysChart, loanHistoryChartPlaceholder, false);
         setChartVisibility(loanedGenresChart, loanedGenresChartPlaceholder, false);
-
 
         if (currentUser != null) {
             Platform.runLater(() -> {
                 populateProfileSectionUserInfo();
                 loadCurrentLoansSummary();
-                loadDueSoonBooks();
-                loadLoanHistoryChartData();
+                loadDueSoonBooksData();
+                loadLoanActivityChartData();
                 loadLoanedGenresChartData();
             });
         } else {
-            if (greetingLabel != null) greetingLabel.setText("Không thể tải thông tin người dùng.");
-            // Các chart và listview đã có placeholder hoặc sẽ hiển thị thông báo rỗng
+            handleNoUser();
         }
         loadQuoteOfTheDay();
     }
 
+    private void handleNoUser(){
+        if (greetingLabel != null) greetingLabel.setText("Xin chào!");
+        if (userNameLabel != null) userNameLabel.setText("Vui lòng đăng nhập");
+        if (userEmailLabel != null) userEmailLabel.setText("");
+        if (userPhoneLabel != null) userPhoneLabel.setText("");
+        if (userDobLabel != null) userDobLabel.setText("");
+        if (currentLoansCountLabel != null) currentLoansCountLabel.setText("0");
+        if (dueSoonListView != null) dueSoonListView.getItems().clear();
+        // Không cần load avatar vì đã có default
+        loadUserAvatar(); // Sẽ load default avatar
+    }
+
+
     private void initializeQuotes() {
         quotesList = Arrays.asList(
                 new Quote("Sách là nguồn của cải quý báu của thế giới và là di sản xứng đáng của các thế hệ và các quốc gia.", "Henry David Thoreau"),
-                new Quote("Đừng đọc những gì giải trí. Hãy đọc những gì khiến bạn phải suy nghĩ.", "Farah Gray"),
-                new Quote("Một cuốn sách hay trên giá sách là một người bạn dù quay lưng lại nhưng vẫn là bạn tốt.", "Ngạn ngữ Việt Nam"),
-                new Quote("Đọc sách không đảm bảo bạn sẽ thành công, nhưng mọi người thành công đều đọc sách rất nhiều.", "Warren Buffett"),
-                new Quote("Thư viện là ngôi đền của học vấn, và học vấn đã tạo nên những con người vĩ đại.", "Ngạn ngữ")
+                new Quote("Đọc sách không những để nâng cao trí tuệ mà còn để nâng cao tâm hồn.", "Maxim Gorky"),
+                new Quote("Một cuốn sách hay trên giá sách là một người bạn dù quay lưng lại nhưng vẫn là bạn tốt.", "Ngạn ngữ Việt Nam")
         );
     }
 
-    // Helper để ẩn/hiện chart và placeholder của nó
     private void setChartVisibility(BarChart<?,?> chart, Label placeholder, boolean showChart) {
         if (chart != null && placeholder != null) {
-            chart.setVisible(showChart);
-            chart.setManaged(showChart);
-            placeholder.setVisible(!showChart);
-            placeholder.setManaged(!showChart);
+            chart.setVisible(showChart); chart.setManaged(showChart);
+            placeholder.setVisible(!showChart); placeholder.setManaged(!showChart);
         }
     }
 
     private void populateProfileSectionUserInfo() {
         if (currentUser == null) return;
         if (greetingLabel != null) {
-            int hour = java.time.LocalTime.now().getHour();
-            if (hour < 5 || hour >= 22) greetingLabel.setText("Khuya rồi, nghỉ sớm nhé,");
+            int hour = LocalTime.now().getHour();
+            if (hour < 5 || hour >= 22) greetingLabel.setText("Khuya rồi, nghỉ ngơi nhé,");
             else if (hour < 12) greetingLabel.setText("Chào buổi sáng,");
             else if (hour < 18) greetingLabel.setText("Chào buổi chiều,");
             else greetingLabel.setText("Chào buổi tối,");
         }
-        if (userNameLabel != null) userNameLabel.setText(currentUser.getUsername());
-        if (userEmailLabel != null) userEmailLabel.setText("Email: " + currentUser.getEmail());
-
-        if (userPhoneLabel != null) userPhoneLabel.setText("SĐT: (chưa có)"); // Cập nhật khi User model có
-        if (userDobLabel != null) userDobLabel.setText("Năm sinh: (chưa có)"); // Cập nhật khi User model có
-
-        loadDefaultAvatarForProfile();
+        if (userNameLabel != null) userNameLabel.setText(currentUser.getFullNameOrDefault(currentUser.getUsernameOrDefault("Bạn")));
+        if (userEmailLabel != null) userEmailLabel.setText("Email: " + currentUser.getEmailOrDefault("N/A"));
+        if (userPhoneLabel != null) userPhoneLabel.setText("SĐT: " + currentUser.getPhoneNumberOrDefault("(chưa cập nhật)"));
+        if (userDobLabel != null) userDobLabel.setText("Ngày sinh: " + currentUser.getDateOfBirthFormattedOrDefault("(chưa cập nhật)", displayDateFormatter));
+        loadUserAvatar();
     }
 
-    private void loadDefaultAvatarForProfile() {
+    private void loadUserAvatar() {
         if (avatarImageView == null) return;
-        try (InputStream defaultStream = getClass().getResourceAsStream("/com/lms/quanlythuvien/images/default_avatar.png")) {
-            if (defaultStream != null) {
-                avatarImageView.setImage(new Image(defaultStream));
-            } else { System.err.println("Default avatar for profile not found.");}
-        } catch (Exception e) { System.err.println("Failed to load default avatar for profile: " + e.getMessage());}
+        Image imageToSet = null; String avatarPath = (currentUser != null) ? currentUser.getAvatarUrl() : null;
+        if (avatarPath != null && !avatarPath.isEmpty()) {
+            try {
+                File avatarFile = new File(avatarPath);
+                if (avatarFile.exists() && avatarFile.isFile() && avatarFile.canRead()) imageToSet = new Image(avatarFile.toURI().toString(), true);
+                else imageToSet = new Image(avatarPath, true);
+                if (imageToSet.isError()) imageToSet = null;
+            } catch (Exception e) { imageToSet = null; }
+        }
+        if (imageToSet == null) {
+            try (InputStream defaultStream = getClass().getResourceAsStream("/com/lms/quanlythuvien/images/default_avatar.png")) {
+                if (defaultStream != null) imageToSet = new Image(defaultStream);
+            } catch (Exception e) { System.err.println("ERROR_UHCC_AVATAR_DEFAULT: " + e.getMessage());}
+        }
+        avatarImageView.setImage(imageToSet);
     }
 
     private void loadCurrentLoansSummary() {
@@ -164,40 +168,34 @@ public class UserHomeContentController implements Initializable {
         currentLoansCountLabel.setText(String.valueOf(activeLoans.size()));
     }
 
-    private void loadDueSoonBooks() {
+    private void loadDueSoonBooksData() {
         if (currentUser == null || dueSoonListView == null) return;
         List<BorrowingRecord> activeLoans = borrowingRecordService.getLoansByUserId(currentUser.getUserId(), true);
+        if (activeLoans.isEmpty()) { dueSoonListView.getItems().clear(); return; }
+
+        Set<Integer> bookIds = activeLoans.stream().map(BorrowingRecord::getBookInternalId).collect(Collectors.toSet());
+        Map<Integer, Book> booksMap = bookManagementService.getBooksByInternalIds(bookIds)
+                .stream().collect(Collectors.toMap(Book::getInternalId, Function.identity()));
         LocalDate today = LocalDate.now();
         LocalDate fiveDaysFromNow = today.plusDays(5);
 
         List<String> dueSoonDetails = activeLoans.stream()
-                .filter(record -> !record.getDueDate().isBefore(today) && record.getDueDate().isBefore(fiveDaysFromNow.plusDays(1)))
+                .filter(record -> record.getDueDate() != null && !record.getDueDate().isBefore(today) && record.getDueDate().isBefore(fiveDaysFromNow.plusDays(1)))
                 .sorted(Comparator.comparing(BorrowingRecord::getDueDate))
                 .map(record -> {
-                    Optional<Book> bookOpt = bookManagementService.findBookByInternalId(record.getBookInternalId());
-                    String title = bookOpt.map(Book::getTitle).orElse("Sách (ID nội bộ: " + record.getBookInternalId() + ")");
+                    Book book = booksMap.get(record.getBookInternalId());
+                    String title = (book != null) ? book.getTitleOrDefault("Sách ID: " + record.getBookInternalId()) : "Sách ID: " + record.getBookInternalId();
                     long daysUntilDue = ChronoUnit.DAYS.between(today, record.getDueDate());
-                    String dueStatus = "";
-                    if (daysUntilDue < 0) dueStatus = " (Đã trễ hạn!)";
-                    else if (daysUntilDue == 0) dueStatus = " (Hạn hôm nay)";
-                    else if (daysUntilDue == 1) dueStatus = " (Còn 1 ngày)";
-                    else dueStatus = " (Còn " + daysUntilDue + " ngày)";
-                    return title + " - Hạn trả: " + record.getDueDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + dueStatus;
+                    String dueStatus = (daysUntilDue == 0) ? "(Hạn hôm nay)" : (daysUntilDue == 1 ? "(Còn 1 ngày)" : "(Còn " + daysUntilDue + " ngày)");
+                    return title + " - Hạn: " + record.getDueDate().format(displayDateFormatter) + " " + dueStatus;
                 })
                 .collect(Collectors.toList());
-
-        if (!dueSoonDetails.isEmpty()) {
-            dueSoonListView.setItems(FXCollections.observableArrayList(dueSoonDetails));
-        } else {
-            dueSoonListView.getItems().clear(); // Xóa items cũ, placeholder sẽ hiển thị
-        }
-        // TODO: Implement custom CellFactory for dueSoonListView
+        dueSoonListView.setItems(FXCollections.observableArrayList(dueSoonDetails));
     }
 
     private void loadQuoteOfTheDay() {
         if (quoteTextLabel == null || quoteAuthorLabel == null || quoteCardUser == null) return;
         if (quotesList != null && !quotesList.isEmpty()) {
-            Random random = new Random();
             Quote randomQuote = quotesList.get(random.nextInt(quotesList.size()));
             quoteTextLabel.setText("\"" + randomQuote.getText() + "\"");
             quoteAuthorLabel.setText("— " + randomQuote.getAuthor());
@@ -207,10 +205,9 @@ public class UserHomeContentController implements Initializable {
         }
     }
 
-    private void loadLoanHistoryChartData() {
+    private void loadLoanActivityChartData() {
         if (currentUser == null || loanHistoryLast14DaysChart == null || dateAxis14Days == null || loanCountAxis14Days == null || loanHistoryChartPlaceholder == null) {
-            setChartVisibility(loanHistoryLast14DaysChart, loanHistoryChartPlaceholder, false);
-            return;
+            setChartVisibility(loanHistoryLast14DaysChart, loanHistoryChartPlaceholder, false); return;
         }
         loanHistoryLast14DaysChart.getData().clear();
         XYChart.Series<Number, String> series = new XYChart.Series<>();
@@ -218,32 +215,30 @@ public class UserHomeContentController implements Initializable {
         LocalDate today = LocalDate.now();
         LocalDate startDate = today.minusDays(13);
         Map<String, Integer> dailyLoanCounts = new LinkedHashMap<>();
-        DateTimeFormatter dayMonthFormatter = DateTimeFormatter.ofPattern("dd/MM");
+        DateTimeFormatter chartDayFormatter = DateTimeFormatter.ofPattern("dd/MM");
 
-        for (int i = 0; i < 14; i++) {
-            dailyLoanCounts.put(startDate.plusDays(i).format(dayMonthFormatter), 0);
-        }
+        for (int i = 0; i < 14; i++) dailyLoanCounts.put(startDate.plusDays(i).format(chartDayFormatter), 0);
 
-        List<BorrowingRecord> allUserLoansInPeriod = borrowingRecordService.getLoansByUserId(currentUser.getUserId(), false)
+        List<BorrowingRecord> loansInPeriod = borrowingRecordService.getLoansByUserId(currentUser.getUserId(), false)
                 .stream()
                 .filter(r -> r.getBorrowDate() != null && !r.getBorrowDate().isBefore(startDate) && !r.getBorrowDate().isAfter(today))
                 .collect(Collectors.toList());
 
         boolean hasData = false;
-        for (BorrowingRecord record : allUserLoansInPeriod) {
-            String formattedDate = record.getBorrowDate().format(dayMonthFormatter);
-            int newCount = dailyLoanCounts.getOrDefault(formattedDate, 0) + 1;
-            dailyLoanCounts.put(formattedDate, newCount);
-            if (newCount > 0) hasData = true;
+        for (BorrowingRecord record : loansInPeriod) {
+            String formattedDate = record.getBorrowDate().format(chartDayFormatter);
+            dailyLoanCounts.compute(formattedDate, (key, val) -> (val == null ? 0 : val) + 1);
+            hasData = true; // Chỉ cần có một record là có data
         }
 
-        ObservableList<String> dateCategories = FXCollections.observableArrayList();
-        dailyLoanCounts.forEach((dateStr, count) -> {
-            dateCategories.add(dateStr);
-            series.getData().add(new XYChart.Data<>(count, dateStr));
-        });
-
         if (hasData) {
+            ObservableList<String> dateCategories = FXCollections.observableArrayList();
+            List<Map.Entry<String, Integer>> entries = new ArrayList<>(dailyLoanCounts.entrySet());
+            Collections.reverse(entries);
+            for (Map.Entry<String, Integer> entry : entries) {
+                dateCategories.add(entry.getKey());
+                series.getData().add(new XYChart.Data<>(entry.getValue(), entry.getKey()));
+            }
             dateAxis14Days.setCategories(dateCategories);
             loanHistoryLast14DaysChart.getData().add(series);
             setChartVisibility(loanHistoryLast14DaysChart, loanHistoryChartPlaceholder, true);
@@ -254,36 +249,41 @@ public class UserHomeContentController implements Initializable {
 
     private void loadLoanedGenresChartData() {
         if (currentUser == null || loanedGenresChart == null || genreCategoryAxis == null || genreLoanCountAxis == null || loanedGenresChartPlaceholder == null) {
-            setChartVisibility(loanedGenresChart, loanedGenresChartPlaceholder, false);
-            return;
+            setChartVisibility(loanedGenresChart, loanedGenresChartPlaceholder, false); return;
         }
         loanedGenresChart.getData().clear();
         XYChart.Series<Number, String> series = new XYChart.Series<>();
 
-        Map<String, Integer> genreCounts = new HashMap<>();
-        List<BorrowingRecord> allUserLoans = borrowingRecordService.getLoansByUserId(currentUser.getUserId(), false);
+        LocalDate last30Days = LocalDate.now().minusDays(30);
+        List<BorrowingRecord> recentLoans = borrowingRecordService.getLoansByUserId(currentUser.getUserId(), false)
+                .stream().filter(r -> r.getBorrowDate() != null && !r.getBorrowDate().isBefore(last30Days))
+                .collect(Collectors.toList());
 
-        for (BorrowingRecord record : allUserLoans) {
-            Optional<Book> bookOpt = bookManagementService.findBookByInternalId(record.getBookInternalId());
-            if (bookOpt.isPresent() && bookOpt.get().getCategories() != null) {
-                for (String category : bookOpt.get().getCategories()) {
+        if (recentLoans.isEmpty()) { setChartVisibility(loanedGenresChart, loanedGenresChartPlaceholder, false); return; }
+
+        Set<Integer> bookIdsInHistory = recentLoans.stream().map(BorrowingRecord::getBookInternalId).collect(Collectors.toSet());
+        Map<Integer, Book> booksMap = bookManagementService.getBooksByInternalIds(bookIdsInHistory)
+                .stream().collect(Collectors.toMap(Book::getInternalId, Function.identity()));
+        Map<String, Integer> genreCounts = new HashMap<>();
+        for (BorrowingRecord record : recentLoans) {
+            Book book = booksMap.get(record.getBookInternalId());
+            if (book != null && book.getCategories() != null) {
+                for (String category : book.getCategories()) {
                     String cleanCategory = category.trim();
-                    if (!cleanCategory.isEmpty()) {
-                        genreCounts.put(cleanCategory, genreCounts.getOrDefault(cleanCategory, 0) + 1);
-                    }
+                    if (!cleanCategory.isEmpty()) genreCounts.put(cleanCategory, genreCounts.getOrDefault(cleanCategory, 0) + 1);
                 }
             }
         }
+        if (genreCounts.isEmpty()) { setChartVisibility(loanedGenresChart, loanedGenresChartPlaceholder, false); return; }
 
         List<Map.Entry<String, Integer>> sortedGenres = genreCounts.entrySet().stream()
-                .filter(entry -> entry.getValue() > 0) // Chỉ lấy thể loại có lượt mượn > 0
                 .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
                 .limit(7)
                 .collect(Collectors.toList());
 
         if (!sortedGenres.isEmpty()) {
-            ObservableList<String> genreCategoriesList = FXCollections.observableArrayList();
             Collections.reverse(sortedGenres);
+            ObservableList<String> genreCategoriesList = FXCollections.observableArrayList();
             for (Map.Entry<String, Integer> entry : sortedGenres) {
                 genreCategoriesList.add(entry.getKey());
                 series.getData().add(new XYChart.Data<>(entry.getValue(), entry.getKey()));

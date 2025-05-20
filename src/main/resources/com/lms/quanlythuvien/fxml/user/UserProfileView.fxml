@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.ImageView?>
+
+<BorderPane styleClass="subview-container-white" stylesheets="@/com/lms/quanlythuvien/css/styles.css" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.user.UserProfileController">
+    <top>
+        <VBox alignment="CENTER_LEFT" styleClass="view-header-pane">
+            <padding><Insets bottom="15.0" left="20.0" right="20.0" top="15.0" /></padding>
+            <Label text="Hồ Sơ Cá Nhân Của Tôi" styleClass="view-title" />
+            <Label text="Chỉnh sửa thông tin, quản lý mật khẩu và sở thích." styleClass="view-subtitle"/>
+        </VBox>
+    </top>
+    <center>
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" style="-fx-background-color: #f4f6f8;"> <content>
+            <VBox spacing="25" style="-fx-padding: 20px;">
+                <GridPane hgap="15" vgap="10" styleClass="content-card">
+                    <padding><Insets top="20" right="30" bottom="20" left="30"/></padding>
+                    <columnConstraints>
+                        <ColumnConstraints hgrow="NEVER" minWidth="130"/>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                        <ColumnConstraints hgrow="NEVER" minWidth="100"/>
+                    </columnConstraints>
+
+                    <Label text="Ảnh đại diện:" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <ImageView fx:id="profileAvatarImageView" fitHeight="100.0" fitWidth="100.0" pickOnBounds="true" preserveRatio="true" GridPane.rowIndex="0" GridPane.columnIndex="1" styleClass="profile-avatar-view"/>
+                    <Button fx:id="changeAvatarButton" text="Thay đổi" onAction="#handleChangeAvatar" GridPane.rowIndex="0" GridPane.columnIndex="2" styleClass="secondary-button-small"/>
+
+                    <Label text="Tên đăng nhập:" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <Label fx:id="profileUsernameLabel" styleClass="info-value-display" GridPane.rowIndex="1" GridPane.columnIndex="1" GridPane.columnSpan="2"/>
+
+                    <Label text="Email (*):" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <TextField fx:id="profileEmailField" promptText="abc@example.com" GridPane.rowIndex="2" GridPane.columnIndex="1" GridPane.columnSpan="2" styleClass="form-input"/>
+
+                    <Label text="Họ và Tên:" GridPane.rowIndex="3" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <TextField fx:id="profileFullNameField" promptText="Nguyễn Văn A" GridPane.rowIndex="3" GridPane.columnIndex="1" GridPane.columnSpan="2" styleClass="form-input"/>
+
+                    <Label text="Số điện thoại:" GridPane.rowIndex="4" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <TextField fx:id="profilePhoneNumberField" promptText="09xxxxxxxx" GridPane.rowIndex="4" GridPane.columnIndex="1" GridPane.columnSpan="2" styleClass="form-input"/>
+
+                    <Label text="Ngày sinh:" GridPane.rowIndex="5" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <DatePicker fx:id="profileDobPicker" promptText="dd/MM/yyyy" GridPane.rowIndex="5" GridPane.columnIndex="1" GridPane.columnSpan="2" styleClass="form-input" prefWidth="Infinity"/>
+
+                    <Label text="Giới thiệu:" GridPane.rowIndex="6" GridPane.columnIndex="0" styleClass="form-label" VBox.vgrow="NEVER"/>
+                    <TextArea fx:id="profileBioTextArea" prefRowCount="3" wrapText="true" promptText="Một vài dòng giới thiệu về bạn..." GridPane.rowIndex="6" GridPane.columnIndex="1" GridPane.columnSpan="2" styleClass="form-input"/>
+
+                    <HBox spacing="10" GridPane.rowIndex="7" GridPane.columnIndex="1" GridPane.columnSpan="2" alignment="CENTER_RIGHT" style="-fx-padding-top: 10px;">
+                        <Button fx:id="saveProfileButton" text="Lưu Thay Đổi" styleClass="primary-button" onAction="#handleSaveProfileChanges"/>
+                    </HBox>
+                    <Label fx:id="profileInfoErrorLabel" styleClass="error-label" GridPane.rowIndex="8" GridPane.columnIndex="1" GridPane.columnSpan="2" managed="false" visible="false"/>
+                </GridPane>
+
+                <Separator><VBox.margin><Insets top="20" bottom="20"/></VBox.margin></Separator>
+
+                <GridPane hgap="15" vgap="10" styleClass="content-card">
+                    <padding><Insets top="20" right="30" bottom="20" left="30"/></padding>
+                    <columnConstraints><ColumnConstraints hgrow="NEVER" minWidth="150"/><ColumnConstraints hgrow="ALWAYS"/></columnConstraints>
+                    <Label text="THAY ĐỔI MẬT KHẨU" styleClass="view-title-user-section" GridPane.columnIndex="0" GridPane.columnSpan="2"/>
+
+                    <Label text="Mật khẩu cũ (*):" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <PasswordField fx:id="oldPasswordField" promptText="Nhập mật khẩu hiện tại" GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="form-input"/>
+
+                    <Label text="Mật khẩu mới (*):" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <PasswordField fx:id="newPasswordField" promptText="Ít nhất 7 ký tự" GridPane.rowIndex="2" GridPane.columnIndex="1" styleClass="form-input"/>
+
+                    <Label text="Xác nhận mật khẩu mới (*):" GridPane.rowIndex="3" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <PasswordField fx:id="confirmNewPasswordField" promptText="Nhập lại mật khẩu mới" GridPane.rowIndex="3" GridPane.columnIndex="1" styleClass="form-input"/>
+
+                    <HBox spacing="10" GridPane.rowIndex="4" GridPane.columnIndex="1" alignment="CENTER_RIGHT" style="-fx-padding-top: 10px;">
+                        <Button fx:id="changePasswordButton" text="Đổi Mật Khẩu" styleClass="primary-button" onAction="#handleChangePassword"/>
+                    </HBox>
+                    <Label fx:id="passwordChangeErrorLabel" styleClass="error-label" GridPane.rowIndex="5" GridPane.columnIndex="1" managed="false" visible="false"/>
+                </GridPane>
+
+                <Separator><VBox.margin><Insets top="20" bottom="20"/></VBox.margin></Separator>
+
+                <VBox spacing="10" styleClass="content-card">
+                    <padding><Insets top="20" right="30" bottom="20" left="30"/></padding>
+                    <Label text="THỂ LOẠI YÊU THÍCH" styleClass="view-title-user-section"/>
+                    <Label text="Chọn các thể loại sách bạn quan tâm:" styleClass="label-regular"/>
+                    <ListView fx:id="favoriteGenresListView" prefHeight="180" styleClass="favorite-genres-list"/>
+                    <Label fx:id="favoriteGenresErrorLabel" styleClass="error-label" managed="false" visible="false"/>
+                    <Button fx:id="saveFavoriteGenresButton" text="Lưu Sở Thích" styleClass="primary-button" onAction="#handleSaveFavoriteGenres">
+                        <VBox.margin><Insets top="10"/></VBox.margin>
+                    </Button>
+                </VBox>
+            </VBox>
+        </content>
+        </ScrollPane>
+    </center>
+</BorderPane>

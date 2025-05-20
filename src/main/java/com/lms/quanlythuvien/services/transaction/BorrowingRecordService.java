@@ -2,12 +2,12 @@ package com.lms.quanlythuvien.services.transaction;
 
 import com.lms.quanlythuvien.models.transaction.BorrowingRecord;
 import com.lms.quanlythuvien.models.transaction.LoanStatus;
-import com.lms.quanlythuvien.services.library.BookManagementService;
+import com.lms.quanlythuvien.services.library.BookManagementService; // Đảm bảo import đúng
 import com.lms.quanlythuvien.utils.database.DatabaseManager;
-// Bỏ import User, Book không cần thiết cho service này nữa (trừ khi có logic nghiệp vụ đặc biệt)
 
 import java.sql.*;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -15,9 +15,12 @@ import java.util.Optional;
 public class BorrowingRecordService {
 
     private static BorrowingRecordService instance;
+    private final BookManagementService bookManagementService; // Sử dụng final
+    private static final DateTimeFormatter DB_DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
     private BorrowingRecordService() {
-        System.out.println("DEBUG_BRS_SINGLETON: BorrowingRecordService Singleton instance created. Data managed by database.");
+        this.bookManagementService = BookManagementService.getInstance();
+        System.out.println("DEBUG_BRS_SINGLETON: BorrowingRecordService Singleton instance created.");
     }
 
     public static synchronized BorrowingRecordService getInstance() {
@@ -27,27 +30,19 @@ public class BorrowingRecordService {
         return instance;
     }
 
-    // Helper để map ResultSet to BorrowingRecord
     private BorrowingRecord mapResultSetToBorrowingRecord(ResultSet rs) throws SQLException {
+        String returnDateStr = rs.getString("returnDate");
         return new BorrowingRecord(
-                rs.getInt("id"), // Tên cột "id" trong bảng BorrowingRecords
+                rs.getInt("id"),
                 rs.getInt("bookInternalId"),
                 rs.getString("userId"),
-                LocalDate.parse(rs.getString("borrowDate")),
-                LocalDate.parse(rs.getString("dueDate")),
-                rs.getString("returnDate") != null ? LocalDate.parse(rs.getString("returnDate")) : null,
+                LocalDate.parse(rs.getString("borrowDate"), DB_DATE_FORMATTER),
+                LocalDate.parse(rs.getString("dueDate"), DB_DATE_FORMATTER),
+                returnDateStr != null ? LocalDate.parse(returnDateStr, DB_DATE_FORMATTER) : null,
                 LoanStatus.valueOf(rs.getString("status").toUpperCase())
         );
     }
 
-    /**
-     * Tạo một lượt mượn mới.
-     * @param bookIsbn13 ISBN-13 của sách được mượn (dùng để lấy internalId và cập nhật số lượng)
-     * @param userId ID của người mượn
-     * @param borrowDate Ngày mượn
-     * @param dueDate Ngày hẹn trả
-     * @return Optional chứa BorrowingRecord nếu thành công, rỗng nếu thất bại.
-     */
     public Optional<BorrowingRecord> createLoan(String bookIsbn13, String userId, LocalDate borrowDate, LocalDate dueDate) {
         if (bookIsbn13 == null || userId == null || borrowDate == null || dueDate == null) {
             System.err.println("ERROR_BRS_CREATE_LOAN: Invalid parameters for creating a loan.");
@@ -58,9 +53,7 @@ public class BorrowingRecordService {
             return Optional.empty();
         }
 
-        BookManagementService bms = BookManagementService.getInstance();
-        Optional<Integer> bookInternalIdOpt = bms.findInternalIdByIsbn13(bookIsbn13); // Cần hàm này trong BMS
-
+        Optional<Integer> bookInternalIdOpt = bookManagementService.findInternalIdByIsbn13(bookIsbn13);
         if (bookInternalIdOpt.isEmpty()) {
             System.err.println("ERROR_BRS_CREATE_LOAN: Book with ISBN-13 " + bookIsbn13 + " not found.");
             return Optional.empty();
@@ -74,8 +67,9 @@ public class BorrowingRecordService {
 
         try {
             conn = DatabaseManager.getInstance().getConnection();
-            conn.setAutoCommit(false);
+            conn.setAutoCommit(false); // BẮT ĐẦU TRANSACTION
 
+            // 1. Kiểm tra người dùng có đang mượn sách này mà chưa trả không
             try (PreparedStatement checkPstmt = conn.prepareStatement(checkExistingSql)) {
                 checkPstmt.setInt(1, bookInternalId);
                 checkPstmt.setString(2, userId);
@@ -90,19 +84,22 @@ public class BorrowingRecordService {
                 }
             }
 
-            // Gọi BMS để giảm số lượng sách có sẵn (dùng ISBN-13 như BMS hiện tại)
-            if (!bms.handleBookBorrowed(bookIsbn13)) {
-                System.err.println("ERROR_BRS_CREATE_LOAN: Failed to update book available quantity for ISBN " + bookIsbn13);
+            // 2. Giảm số lượng sách có sẵn (TRUYỀN CONNECTION)
+            if (!bookManagementService.handleBookBorrowedByInternalId(conn, bookInternalId)) {
+                // BookManagementService.handleBookBorrowedByInternalId(conn,...) sẽ trả về false nếu logic thất bại
+                // (ví dụ: sách hết, không tìm thấy). SQLException sẽ được ném nếu có lỗi DB nghiêm trọng.
+                System.err.println("ERROR_BRS_CREATE_LOAN: Failed to update book available quantity for internalId " + bookInternalId + " (handled by BookManagementService).");
                 conn.rollback();
                 return Optional.empty();
             }
 
-            BorrowingRecord newLoan = new BorrowingRecord(bookInternalId, userId, borrowDate, dueDate);
+            // 3. Tạo bản ghi mượn sách mới
+            BorrowingRecord newLoan = new BorrowingRecord(bookInternalId, userId, borrowDate, dueDate); // Status mặc định là ACTIVE
             try (PreparedStatement insertPstmt = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
                 insertPstmt.setInt(1, newLoan.getBookInternalId());
                 insertPstmt.setString(2, newLoan.getUserId());
-                insertPstmt.setString(3, newLoan.getBorrowDate().toString());
-                insertPstmt.setString(4, newLoan.getDueDate().toString());
+                insertPstmt.setString(3, newLoan.getBorrowDate().format(DB_DATE_FORMATTER));
+                insertPstmt.setString(4, newLoan.getDueDate().format(DB_DATE_FORMATTER));
                 insertPstmt.setString(5, newLoan.getStatus().name());
 
                 int affectedRows = insertPstmt.executeUpdate();
@@ -110,24 +107,38 @@ public class BorrowingRecordService {
                     try (ResultSet generatedKeys = insertPstmt.getGeneratedKeys()) {
                         if (generatedKeys.next()) {
                             newLoan.setRecordId(generatedKeys.getInt(1));
-                            conn.commit();
-                            System.out.println("DEBUG_BRS_CREATE_LOAN: New loan created in DB: ID " + newLoan.getRecordId() + " for book internalId " + bookInternalId);
+                            conn.commit(); // COMMIT TRANSACTION NẾU TẤT CẢ THÀNH CÔNG
+                            System.out.println("DEBUG_BRS_CREATE_LOAN: New loan created: ID " + newLoan.getRecordId() + " for book internalId " + bookInternalId);
                             return Optional.of(newLoan);
                         }
                     }
                 }
+                // Nếu không lấy được ID hoặc không có dòng nào bị ảnh hưởng
                 conn.rollback();
-                System.err.println("ERROR_BRS_CREATE_LOAN: Creating loan failed, no ID obtained or no rows affected.");
+                System.err.println("ERROR_BRS_CREATE_LOAN: Creating BorrowingRecord failed, no ID obtained or no rows affected.");
                 return Optional.empty();
             }
 
-        } catch (SQLException e) {
-            System.err.println("ERROR_BRS_CREATE_LOAN: DB error: " + e.getMessage());
-            e.printStackTrace();
-            if (conn != null) try { conn.rollback(); } catch (SQLException ex) { e.addSuppressed(ex); }
+        } catch (SQLException e) { // Bắt SQLException từ bất kỳ thao tác DB nào trong khối try
+            System.err.println("ERROR_BRS_CREATE_LOAN: SQLException occurred during createLoan transaction for bookId " + bookInternalId + ": " + e.getMessage());
+            if (conn != null) {
+                try {
+                    System.err.println("Attempting to rollback transaction due to SQLException...");
+                    conn.rollback();
+                } catch (SQLException exRollback) {
+                    System.err.println("ERROR_BRS_CREATE_LOAN_ROLLBACK_EX: Failed to rollback transaction: " + exRollback.getMessage());
+                }
+            }
             return Optional.empty();
         } finally {
-            if (conn != null) try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) { e.printStackTrace(); }
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true); // Khôi phục trạng thái autoCommit
+                    conn.close();
+                } catch (SQLException exClose) {
+                    System.err.println("ERROR_BRS_CREATE_LOAN_CLOSE_EX: Failed to close connection: " + exClose.getMessage());
+                }
+            }
         }
     }
 
@@ -137,67 +148,73 @@ public class BorrowingRecordService {
             return false;
         }
 
-        Optional<BorrowingRecord> loanOpt = findLoanById(loanRecordId);
+        Optional<BorrowingRecord> loanOpt = findLoanById(loanRecordId); // findLoanById tự quản lý connection
         if (loanOpt.isEmpty()) {
             System.err.println("ERROR_BRS_RETURN: Loan " + loanRecordId + " not found.");
             return false;
         }
         BorrowingRecord loan = loanOpt.get();
         if (loan.getStatus() == LoanStatus.RETURNED) {
-            System.err.println("WARN_BRS_RETURN: Book for loan " + loanRecordId + " has already been returned.");
-            return false;
+            System.out.println("WARN_BRS_RETURN: Book for loan " + loanRecordId + " has already been returned on " + loan.getReturnDate());
+            return true;
         }
 
         String updateSql = "UPDATE BorrowingRecords SET returnDate = ?, status = ? WHERE id = ?";
         Connection conn = null;
         try {
             conn = DatabaseManager.getInstance().getConnection();
-            conn.setAutoCommit(false);
+            conn.setAutoCommit(false); // BẮT ĐẦU TRANSACTION
 
+            // 1. Cập nhật bản ghi mượn
             try (PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
-                pstmt.setString(1, actualReturnDate.toString());
+                pstmt.setString(1, actualReturnDate.format(DB_DATE_FORMATTER));
                 pstmt.setString(2, LoanStatus.RETURNED.name());
                 pstmt.setInt(3, loanRecordId);
                 int affectedRows = pstmt.executeUpdate();
                 if (affectedRows == 0) {
                     conn.rollback();
-                    System.err.println("ERROR_BRS_RETURN: Failed to update loan record " + loanRecordId + " in DB.");
+                    System.err.println("ERROR_BRS_RETURN: Failed to update loan record " + loanRecordId + " in DB. Loan might not exist.");
                     return false;
                 }
             }
 
-            // Lấy ISBN-13 của sách để gọi BookManagementService
-            BookManagementService bms = BookManagementService.getInstance();
-            Optional<com.lms.quanlythuvien.models.item.Book> bookOpt = bms.findBookByInternalId(loan.getBookInternalId());
-            if (bookOpt.isEmpty() || bookOpt.get().getIsbn13() == null) {
-                System.err.println("ERROR_BRS_RETURN: Could not find book or its ISBN-13 to update quantity for internalId " + loan.getBookInternalId());
-                conn.rollback(); // Quan trọng: rollback nếu không thể cập nhật số lượng sách
-                return false;
-            }
-
-            if (!bms.handleBookReturned(bookOpt.get().getIsbn13())) {
-                System.err.println("ERROR_BRS_RETURN: Failed to update book available quantity for ISBN " + bookOpt.get().getIsbn13());
+            // 2. Tăng số lượng sách có sẵn (TRUYỀN CONNECTION)
+            if (!bookManagementService.handleBookReturnedByInternalId(conn, loan.getBookInternalId())) {
+                System.err.println("ERROR_BRS_RETURN: Failed to update book available quantity for internalId " + loan.getBookInternalId() + ". Rolling back loan status update.");
                 conn.rollback();
                 return false;
             }
 
-            conn.commit();
+            conn.commit(); // COMMIT TRANSACTION
             System.out.println("DEBUG_BRS_RETURN: Loan " + loanRecordId + " marked as RETURNED on " + actualReturnDate);
             return true;
 
-        } catch (SQLException e) {
-            System.err.println("ERROR_BRS_RETURN: DB error for loan " + loanRecordId + ": " + e.getMessage());
-            e.printStackTrace();
-            if (conn != null) try { conn.rollback(); } catch (SQLException ex) { e.addSuppressed(ex); }
+        } catch (SQLException e) { // Bắt SQLException từ bất kỳ thao tác DB nào
+            System.err.println("ERROR_BRS_RETURN: SQLException occurred during recordBookReturn transaction for loan " + loanRecordId + ": " + e.getMessage());
+            if (conn != null) {
+                try {
+                    System.err.println("Attempting to rollback transaction due to SQLException...");
+                    conn.rollback();
+                } catch (SQLException exRollback) {
+                    System.err.println("ERROR_BRS_RETURN_ROLLBACK_EX: Failed to rollback transaction: " + exRollback.getMessage());
+                }
+            }
             return false;
         } finally {
-            if (conn != null) try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) { e.printStackTrace(); }
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException exClose) {
+                    System.err.println("ERROR_BRS_RETURN_CLOSE_EX: Failed to close connection: " + exClose.getMessage());
+                }
+            }
         }
     }
 
     public Optional<BorrowingRecord> findLoanById(int loanRecordId) {
         String sql = "SELECT * FROM BorrowingRecords WHERE id = ?";
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
+        try (Connection conn = DatabaseManager.getInstance().getConnection(); // Connection cho thao tác đọc này
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, loanRecordId);
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -207,27 +224,23 @@ public class BorrowingRecordService {
             }
         } catch (SQLException e) {
             System.err.println("ERROR_BRS_FIND_ID: DB error finding loan by ID " + loanRecordId + ": " + e.getMessage());
-            e.printStackTrace();
         }
         return Optional.empty();
     }
 
-    /**
-     * Lấy danh sách các lượt mượn của một người dùng.
-     * @param userId ID của người dùng
-     * @param activeOnly true nếu chỉ muốn lấy các lượt mượn đang ACTIVE hoặc OVERDUE
-     * @return Danh sách BorrowingRecord
-     */
     public List<BorrowingRecord> getLoansByUserId(String userId, boolean activeOnly) {
-        if (userId == null) return new ArrayList<>();
-        updateAllOverdueStatuses(LocalDate.now());
+        if (userId == null || userId.trim().isEmpty()) {
+            System.err.println("WARN_BRS_GET_USER_LOANS: User ID is null or empty.");
+            return new ArrayList<>();
+        }
+        updateAllOverdueStatuses(LocalDate.now()); // Cập nhật trước khi lấy
 
         List<BorrowingRecord> records = new ArrayList<>();
         StringBuilder sqlBuilder = new StringBuilder("SELECT * FROM BorrowingRecords WHERE userId = ?");
         if (activeOnly) {
-            sqlBuilder.append(" AND status IN (?, ?)");
+            sqlBuilder.append(" AND status IN (?, ?)"); // ACTIVE or OVERDUE
         }
-        sqlBuilder.append(" ORDER BY borrowDate DESC");
+        sqlBuilder.append(" ORDER BY borrowDate DESC, dueDate DESC");
 
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sqlBuilder.toString())) {
@@ -243,25 +256,29 @@ public class BorrowingRecordService {
             }
         } catch (SQLException e) {
             System.err.println("ERROR_BRS_GET_USER_LOANS: DB error for user " + userId + ": " + e.getMessage());
-            e.printStackTrace();
         }
         return records;
     }
 
-    /**
-     * Lấy danh sách các lượt mượn của một sách (dựa trên internalId).
-     * @param bookInternalId Internal ID của sách
-     * @param activeOnly true nếu chỉ muốn lấy các lượt mượn đang ACTIVE hoặc OVERDUE
-     * @return Danh sách BorrowingRecord
-     */
     public List<BorrowingRecord> getLoansByBookInternalId(int bookInternalId, boolean activeOnly) {
-        updateAllOverdueStatuses(LocalDate.now());
+        if (bookInternalId <= 0) {
+            System.err.println("WARN_BRS_GET_BOOK_LOANS: Invalid bookInternalId: " + bookInternalId);
+            return new ArrayList<>();
+        }
+        // Cân nhắc có nên gọi updateAllOverdueStatuses ở đây không,
+        // nếu hàm này được gọi thường xuyên và updateAllOverdueStatuses tốn kém.
+        // Tuy nhiên, để đảm bảo dữ liệu trạng thái chính xác, có thể giữ lại.
+        if (activeOnly) { // Chỉ cập nhật nếu cần xem trạng thái active/overdue
+            updateAllOverdueStatuses(LocalDate.now());
+        }
+
+
         List<BorrowingRecord> records = new ArrayList<>();
         StringBuilder sqlBuilder = new StringBuilder("SELECT * FROM BorrowingRecords WHERE bookInternalId = ?");
         if (activeOnly) {
-            sqlBuilder.append(" AND status IN (?, ?)");
+            sqlBuilder.append(" AND status IN (?, ?)"); // ACTIVE or OVERDUE
         }
-        sqlBuilder.append(" ORDER BY borrowDate DESC");
+        sqlBuilder.append(" ORDER BY borrowDate DESC, dueDate DESC");
 
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sqlBuilder.toString())) {
@@ -277,54 +294,37 @@ public class BorrowingRecordService {
             }
         } catch (SQLException e) {
             System.err.println("ERROR_BRS_GET_BOOK_LOANS: DB error for book internalId " + bookInternalId + ": " + e.getMessage());
-            e.printStackTrace();
         }
         return records;
     }
 
-
     public void updateAllOverdueStatuses(LocalDate currentDate) {
         System.out.println("DEBUG_BRS_OVERDUE_UPDATE: Checking and updating overdue statuses for date: " + currentDate);
-        String selectActiveOverdueSql = "SELECT id FROM BorrowingRecords WHERE status = ? AND dueDate < ?";
-        String updateStatusSql = "UPDATE BorrowingRecords SET status = ? WHERE id = ?";
+        String updateSql = "UPDATE BorrowingRecords SET status = ? WHERE status = ? AND dueDate < ?";
         int updatedCount = 0;
 
-        List<Integer> idsToUpdate = new ArrayList<>();
         try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement selectPstmt = conn.prepareStatement(selectActiveOverdueSql)) {
+             PreparedStatement updatePstmt = conn.prepareStatement(updateSql)) {
 
-            selectPstmt.setString(1, LoanStatus.ACTIVE.name());
-            selectPstmt.setString(2, currentDate.toString());
-            try (ResultSet rs = selectPstmt.executeQuery()) {
-                while (rs.next()) {
-                    idsToUpdate.add(rs.getInt("id"));
-                }
-            }
+            updatePstmt.setString(1, LoanStatus.OVERDUE.name());
+            updatePstmt.setString(2, LoanStatus.ACTIVE.name());
+            updatePstmt.setString(3, currentDate.format(DB_DATE_FORMATTER));
 
-            if (!idsToUpdate.isEmpty()) {
-                try (PreparedStatement updatePstmt = conn.prepareStatement(updateStatusSql)) {
-                    for (int recordId : idsToUpdate) {
-                        updatePstmt.setString(1, LoanStatus.OVERDUE.name());
-                        updatePstmt.setInt(2, recordId);
-                        updatePstmt.addBatch();
-                        updatedCount++;
-                        System.out.println("DEBUG_BRS_OVERDUE_UPDATE: Loan " + recordId + " marked for OVERDUE status update.");
-                    }
-                    updatePstmt.executeBatch();
-                    System.out.println("DEBUG_BRS_OVERDUE_UPDATE: Total " + updatedCount + " loans updated to OVERDUE in DB.");
-                }
+            updatedCount = updatePstmt.executeUpdate();
+
+            if (updatedCount > 0) {
+                System.out.println("DEBUG_BRS_OVERDUE_UPDATE: Total " + updatedCount + " loans updated to OVERDUE in DB.");
             } else {
-                System.out.println("DEBUG_BRS_OVERDUE_UPDATE: No loans found to update to OVERDUE status.");
+                // System.out.println("DEBUG_BRS_OVERDUE_UPDATE: No active loans found to update to OVERDUE status for date " + currentDate);
             }
 
         } catch (SQLException e) {
             System.err.println("ERROR_BRS_OVERDUE_UPDATE: DB error updating overdue statuses: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
     public List<BorrowingRecord> getOverdueLoans(LocalDate currentDate) {
-        updateAllOverdueStatuses(currentDate);
+        updateAllOverdueStatuses(currentDate); // Đảm bảo trạng thái được cập nhật
         List<BorrowingRecord> records = new ArrayList<>();
         String sql = "SELECT * FROM BorrowingRecords WHERE status = ? ORDER BY dueDate ASC";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
@@ -336,26 +336,77 @@ public class BorrowingRecordService {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("ERROR_BRS_GET_OVERDUE: DB error: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("ERROR_BRS_GET_OVERDUE: DB error fetching overdue loans: " + e.getMessage());
         }
         return records;
     }
 
     public List<BorrowingRecord> getAllLoans() {
-        // updateAllOverdueStatuses(LocalDate.now()); // Cân nhắc gọi ở đây, có thể làm chậm
         List<BorrowingRecord> records = new ArrayList<>();
-        String sql = "SELECT * FROM BorrowingRecords ORDER BY borrowDate DESC";
+        String sql = "SELECT * FROM BorrowingRecords ORDER BY borrowDate DESC, id DESC";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
-             Statement stmt = conn.createStatement(); // Dùng Statement vì không có tham số
+             Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 records.add(mapResultSetToBorrowingRecord(rs));
             }
         } catch (SQLException e) {
-            System.err.println("ERROR_BRS_GET_ALL: DB error: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("ERROR_BRS_GET_ALL: DB error retrieving all loans: " + e.getMessage());
         }
         return records;
+    }
+
+    public List<BorrowingRecord> getAllActiveLoans() {
+        updateAllOverdueStatuses(LocalDate.now());
+        List<BorrowingRecord> records = new ArrayList<>();
+        String sql = "SELECT * FROM BorrowingRecords WHERE status = ? OR status = ? ORDER BY dueDate ASC";
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, LoanStatus.ACTIVE.name());
+            pstmt.setString(2, LoanStatus.OVERDUE.name());
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    records.add(mapResultSetToBorrowingRecord(rs));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("ERROR_BRS_GET_ALL_ACTIVE: DB error retrieving all active loans: " + e.getMessage());
+        }
+        return records;
+    }
+
+    public int countActiveLoans() {
+        updateAllOverdueStatuses(LocalDate.now());
+        String sql = "SELECT COUNT(*) AS count FROM BorrowingRecords WHERE status = ? OR status = ?";
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, LoanStatus.ACTIVE.name());
+            pstmt.setString(2, LoanStatus.OVERDUE.name());
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("count");
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("ERROR_BRS_COUNT_ACTIVE_OR_OVERDUE: DB error counting active/overdue loans: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    public int countOverdueLoans() {
+        updateAllOverdueStatuses(LocalDate.now());
+        String sql = "SELECT COUNT(*) AS count FROM BorrowingRecords WHERE status = ?";
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, LoanStatus.OVERDUE.name());
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("count");
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("ERROR_BRS_COUNT_OVERDUE: DB error counting overdue loans: " + e.getMessage());
+        }
+        return 0;
     }
 }

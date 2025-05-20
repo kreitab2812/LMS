@@ -1,34 +1,47 @@
 package com.lms.quanlythuvien.controllers.user;
 
-import com.lms.quanlythuvien.MainApp; // Cần nếu có hành động điều hướng từ đây (hiện tại không có)
+import com.lms.quanlythuvien.MainApp;
 import com.lms.quanlythuvien.models.item.Book;
 import com.lms.quanlythuvien.models.user.User;
 import com.lms.quanlythuvien.models.transaction.BorrowingRequest;
+import com.lms.quanlythuvien.models.item.BookReview;
+import com.lms.quanlythuvien.models.system.Notification; // Thêm cho gửi thông báo
 import com.lms.quanlythuvien.services.library.BookManagementService;
 import com.lms.quanlythuvien.services.transaction.BorrowingRequestService;
+import com.lms.quanlythuvien.services.user.FavoriteBookService;
+import com.lms.quanlythuvien.services.library.BookReviewService;
+import com.lms.quanlythuvien.services.system.NotificationService; // Thêm service
 import com.lms.quanlythuvien.utils.session.SessionManager;
 
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.stage.Stage;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority; // <<< THÊM IMPORT
+import javafx.scene.layout.VBox;
+// Bỏ Stage nếu không dùng dialog riêng (view này được load vào StackPane)
 
 import java.io.InputStream;
 import java.net.URL;
-import java.util.List;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Optional;
+import java.util.List;
+import java.util.Optional; // <<< THÊM IMPORT
 import java.util.ResourceBundle;
+// Bỏ IntStream nếu không dùng
 
 public class BookDetailController implements Initializable {
 
+    //<editor-fold desc="FXML Injections - Basic Info & Actions">
     @FXML private Label detailTitleLabel;
     @FXML private ImageView detailCoverImageView;
     @FXML private Label detailAuthorsLabel;
@@ -39,283 +52,478 @@ public class BookDetailController implements Initializable {
     @FXML private Label detailCategoriesLabel;
     @FXML private TextArea detailDescriptionArea;
     @FXML private Label detailAvailableQuantityLabel;
+    @FXML private Label shelfLocationLabel;
     @FXML private Button requestBorrowButton;
     @FXML private Button closeDetailButton;
+    //</editor-fold>
+
+    //<editor-fold desc="FXML Injections - Favorite & Review/Rating">
+    @FXML private Button favoriteButton;
+    @FXML private Label averageRatingDisplayLabel;
+    @FXML private HBox averageRatingStarsPane;
+    @FXML private ListView<BookReview> reviewsListView;
+    @FXML private ComboBox<Integer> ratingComboBox;
+    @FXML private TextArea newCommentTextArea;
+    @FXML private Button submitReviewButton;
+    @FXML private Label reviewErrorLabel;
+    //</editor-fold>
 
     private Book currentBook;
     private User currentUser;
     private BookManagementService bookManagementService;
     private BorrowingRequestService borrowingRequestService;
+    private FavoriteBookService favoriteBookService;
+    private BookReviewService bookReviewService;
+    private NotificationService notificationService;
     private Image defaultBookCoverImage;
 
-    // Constructor (không bắt buộc, nhưng có thể dùng để khởi tạo service nếu chưa phải Singleton hoàn toàn)
+    private UserDashboardController dashboardController; // Để điều hướng
+
+    private final String HEART_EMPTY = "🤍"; // Chỉ icon
+    private final String HEART_FULL = "❤️";   // Chỉ icon
+
     public BookDetailController() {
-        // Services được lấy bằng getInstance() nên không cần khởi tạo ở đây
-        // nếu chúng đã được thiết kế là Singleton chuẩn.
+        // Constructor
+    }
+
+    public void setDashboardController(UserDashboardController dashboardController) {
+        this.dashboardController = dashboardController;
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // Khởi tạo các service
         bookManagementService = BookManagementService.getInstance();
         borrowingRequestService = BorrowingRequestService.getInstance();
-        currentUser = SessionManager.getInstance().getCurrentUser(); // Lấy user hiện tại
+        favoriteBookService = FavoriteBookService.getInstance();
+        bookReviewService = BookReviewService.getInstance();
+        notificationService = NotificationService.getInstance();
+        currentUser = SessionManager.getInstance().getCurrentUser();
 
-        // Tải ảnh bìa mặc định
+        loadDefaultBookCoverImage();
+        setupRatingComboBox();
+        setupReviewsListViewCellFactory();
+        clearReviewError();
+
+        Book bookFromSession = SessionManager.getInstance().getSelectedBook();
+        // Không xóa book khỏi session ở đây, để UserDashboardController hoặc
+        // nơi gọi quyết định khi nào xóa (ví dụ sau khi điều hướng đi)
+
+        if (bookFromSession != null && bookFromSession.getIsbn13() != null && !bookFromSession.getIsbn13().isEmpty()) {
+            Optional<Book> freshBookOpt = bookManagementService.findBookByIsbn13InLibrary(bookFromSession.getIsbn13());
+            if (freshBookOpt.isPresent()) {
+                setBookDataUI(freshBookOpt.get()); // Đổi tên hàm để rõ ràng hơn
+            } else {
+                handleMissingBookData("Sách (ISBN: " + bookFromSession.getIsbn13() + ") không còn tồn tại trong thư viện.");
+            }
+        } else {
+            handleMissingBookData("Không có thông tin sách được chọn để hiển thị.");
+        }
+        updateControlsBasedOnLoginStatus();
+    }
+
+    private void loadDefaultBookCoverImage() {
         try (InputStream defaultStream = getClass().getResourceAsStream("/com/lms/quanlythuvien/images/default_book_cover.png")) {
             if (defaultStream != null) {
                 defaultBookCoverImage = new Image(defaultStream);
             } else {
-                System.err.println("ERROR_BDC_INIT: Default book cover image not found at specified path.");
+                System.err.println("ERROR_BDC_INIT: Default book cover resource not found.");
             }
         } catch (Exception e) {
             System.err.println("ERROR_BDC_INIT: Exception loading default book cover: " + e.getMessage());
-            e.printStackTrace();
         }
+    }
 
-        // Không làm gì với currentBook ở đây nữa, vì nó sẽ được set qua setBookData()
-        // Nếu currentUser là null, các hành động liên quan đến user (như gửi yêu cầu) sẽ bị ảnh hưởng.
-        if (currentUser == null) {
-            System.err.println("WARN_BDC_INIT: Current user is null. 'Request Borrow' button might be disabled or restricted.");
-            if (requestBorrowButton != null) {
-                requestBorrowButton.setText("Vui lòng đăng nhập");
+    private void setupRatingComboBox() {
+        if (ratingComboBox != null) {
+            ObservableList<Integer> ratings = FXCollections.observableArrayList(5, 4, 3, 2, 1);
+            ratingComboBox.setItems(ratings);
+            ratingComboBox.setPromptText("Sao");
+        }
+    }
+
+    private void updateControlsBasedOnLoginStatus() {
+        boolean isLoggedIn = (currentUser != null);
+        if (requestBorrowButton != null) {
+            if (!isLoggedIn) {
+                requestBorrowButton.setText("Đăng nhập để mượn");
                 requestBorrowButton.setDisable(true);
             }
+            // Trạng thái disable/enable cụ thể sẽ do updateAvailabilityInfoAndRequestButtonStatus() xử lý
         }
+        if (favoriteButton != null) favoriteButton.setDisable(!isLoggedIn);
+        if (submitReviewButton != null) submitReviewButton.setDisable(!isLoggedIn);
+        if (newCommentTextArea != null) {
+            newCommentTextArea.setDisable(!isLoggedIn);
+            newCommentTextArea.setPromptText(isLoggedIn ? "Viết bình luận của bạn..." : "Đăng nhập để bình luận.");
+        }
+        if (ratingComboBox != null) ratingComboBox.setDisable(!isLoggedIn);
     }
 
-    /**
-     * Thiết lập dữ liệu sách để hiển thị trên view.
-     * Phương thức này sẽ được gọi từ controller đã load BookDetailView.fxml.
-     * @param book Đối tượng Book cần hiển thị.
-     */
-    public void setBookData(Book book) {
-        this.currentBook = book;
-        if (book != null) {
-            System.out.println("DEBUG_BDC_SET_BOOK: Displaying details for book: " + book.getTitle());
-            detailTitleLabel.setText(book.getTitle() != null ? book.getTitle() : "N/A");
-            detailAuthorsLabel.setText(book.getAuthors() != null && !book.getAuthors().isEmpty() ? String.join(", ", book.getAuthors()) : "N/A");
-            detailPublisherLabel.setText(book.getPublisher() != null ? book.getPublisher() : "N/A");
-            detailPublishedDateLabel.setText(book.getPublishedDate() != null ? book.getPublishedDate() : "N/A");
-
-            String isbnText = "ISBN-13: " + (book.getIsbn13() != null ? book.getIsbn13() : "N/A");
-            if (book.getIsbn10() != null && !book.getIsbn10().isEmpty()) {
-                isbnText += " / ISBN-10: " + book.getIsbn10();
-            }
-            detailIsbnLabel.setText(isbnText);
-
-            detailPageCountLabel.setText(book.getPageCount() != null ? String.valueOf(book.getPageCount()) + " trang" : "N/A");
-            detailCategoriesLabel.setText(book.getCategories() != null && !book.getCategories().isEmpty() ? String.join("; ", book.getCategories()) : "N/A");
-            detailDescriptionArea.setText(book.getDescription() != null ? book.getDescription() : "Không có mô tả.");
-            detailDescriptionArea.setWrapText(true);
-            detailDescriptionArea.setEditable(false); // Mô tả chỉ để đọc
-
-            updateAvailabilityInfoAndRequestButton(); // Gọi hàm tổng hợp
-            loadCoverImage(book.getThumbnailUrl());
-
-        } else {
-            System.err.println("ERROR_BDC_SET_BOOK: Book data provided to setBookData is null.");
-            showAlert(Alert.AlertType.ERROR, "Lỗi Dữ liệu", "Không thể hiển thị chi tiết sách do thiếu dữ liệu.");
-            // Cân nhắc đóng dialog nếu nó được mở dưới dạng dialog và không có dữ liệu
-            Platform.runLater(this::closeDialog); // Đảm bảo chạy trên UI thread nếu setBookData được gọi từ luồng khác
-        }
-    }
-
-    private void updateAvailabilityInfoAndRequestButton() {
-        if (currentBook == null || detailAvailableQuantityLabel == null || requestBorrowButton == null) {
+    // Hàm này được gọi sau khi đã có `currentBook` (bản mới nhất từ DB)
+    public void setBookDataUI(Book bookToDisplay) {
+        this.currentBook = bookToDisplay;
+        if (currentBook == null) {
+            handleMissingBookData("Dữ liệu sách không hợp lệ.");
             return;
         }
 
-        // Lấy thông tin sách mới nhất từ DB để đảm bảo số lượng chính xác
-        // currentBook.getIsbn13() là ID chính để tham chiếu sách này
-        Optional<Book> freshBookOpt = bookManagementService.findBookByIsbn13InLibrary(currentBook.getIsbn13());
+        System.out.println("DEBUG_BDC_SET_BOOK_UI: Displaying details for: " + currentBook.getTitleOrDefault("N/A"));
 
-        if (freshBookOpt.isPresent()) {
-            this.currentBook = freshBookOpt.get(); // Cập nhật currentBook với thông tin mới nhất từ DB
-        } else {
-            // Sách không còn tìm thấy trong DB (có thể đã bị xóa bởi Admin khác)
-            detailAvailableQuantityLabel.setText("Không xác định");
-            detailAvailableQuantityLabel.setStyle("-fx-text-fill: orange; -fx-font-weight: bold;");
-            requestBorrowButton.setDisable(true);
-            requestBorrowButton.setText("Sách không tồn tại");
-            System.err.println("WARN_BDC_AVAILABILITY: Book with ISBN " + currentBook.getIsbn13() + " not found in DB for availability update.");
-            return;
+        detailTitleLabel.setText(currentBook.getTitleOrDefault("N/A"));
+        detailAuthorsLabel.setText(currentBook.getAuthorsFormatted("N/A"));
+        detailPublisherLabel.setText(currentBook.getPublisherOrDefault("N/A"));
+        detailPublishedDateLabel.setText(currentBook.getPublishedDateOrDefault("N/A"));
+
+        String isbnText = "ISBN-13: " + currentBook.getIsbn13OrDefault("N/A");
+        if (currentBook.getIsbn10() != null && !currentBook.getIsbn10().isEmpty()) {
+            isbnText += " / ISBN-10: " + currentBook.getIsbn10();
         }
+        detailIsbnLabel.setText(isbnText);
 
+        detailPageCountLabel.setText(currentBook.getPageCount() != null ? currentBook.getPageCount() + " trang" : "N/A");
+        detailCategoriesLabel.setText(currentBook.getCategoriesFormatted("N/A"));
+        detailDescriptionArea.setText(currentBook.getDescriptionOrDefault("Chưa có mô tả."));
+        detailDescriptionArea.setWrapText(true);
+        detailDescriptionArea.setEditable(false);
+        shelfLocationLabel.setText(currentBook.getShelfLocationOrDefault("N/A"));
+
+        loadCoverImageUI(currentBook.getThumbnailUrl());
+        updateAvailabilityInfoAndRequestButtonStatus();
+        updateFavoriteButtonStatus();
+        loadBookReviewsAndRating();
+    }
+
+    private void handleMissingBookData(String message) {
+        System.err.println("ERROR_BDC_MISSING_DATA: " + message);
+        if (detailTitleLabel != null) detailTitleLabel.setText("Không Tìm Thấy Sách");
+        if (detailDescriptionArea != null) detailDescriptionArea.setText(message);
+        // Vô hiệu hóa các control khác
+        if(requestBorrowButton != null) {requestBorrowButton.setDisable(true); requestBorrowButton.setText("Không có sách");}
+        if(favoriteButton != null) favoriteButton.setDisable(true);
+        if(submitReviewButton != null) submitReviewButton.setDisable(true);
+        if(newCommentTextArea != null) newCommentTextArea.setDisable(true);
+        if(ratingComboBox != null) ratingComboBox.setDisable(true);
+        if(reviewsListView != null) reviewsListView.setPlaceholder(new Label(message));
+        if(averageRatingDisplayLabel != null) averageRatingDisplayLabel.setText("");
+        if(averageRatingStarsPane != null) averageRatingStarsPane.getChildren().clear();
+
+        showAlert(Alert.AlertType.WARNING, "Lỗi Thông Tin", message);
+        // Không tự động đóng view, để người dùng tự đóng bằng nút "Đóng"
+    }
+
+    private void updateAvailabilityInfoAndRequestButtonStatus() {
+        if (currentBook == null || detailAvailableQuantityLabel == null || requestBorrowButton == null) return;
         int available = currentBook.getAvailableQuantity();
         detailAvailableQuantityLabel.setText(String.valueOf(available));
+        detailAvailableQuantityLabel.getStyleClass().removeAll("availability-good", "availability-low", "availability-out");
 
         if (currentUser == null) { // Nếu chưa đăng nhập
-            requestBorrowButton.setText("Đăng nhập để yêu cầu");
+            requestBorrowButton.setText("Đăng nhập để mượn");
             requestBorrowButton.setDisable(true);
-            detailAvailableQuantityLabel.setStyle(""); // Reset style số lượng
             return;
         }
 
         if (available > 0) {
-            detailAvailableQuantityLabel.setStyle("-fx-text-fill: #007e3f; -fx-font-weight: bold;");
-            // Nút sẽ được bật/tắt bởi checkIfUserHasPendingRequestForThisBook
-            checkIfUserHasPendingRequestForThisBook();
+            detailAvailableQuantityLabel.getStyleClass().add("availability-good");
+            checkIfUserHasPendingOrApprovedRequest();
         } else {
-            detailAvailableQuantityLabel.setStyle("-fx-text-fill: #D8000C; -fx-font-weight: bold;");
-            requestBorrowButton.setDisable(true);
+            detailAvailableQuantityLabel.getStyleClass().add("availability-out");
             requestBorrowButton.setText("Hết Sách");
+            requestBorrowButton.setDisable(true);
         }
     }
 
-    private void checkIfUserHasPendingRequestForThisBook() {
-        // Hàm này chỉ nên được gọi nếu currentUser và currentBook không null, và sách còn hàng
-        if (currentUser == null || currentBook == null || currentBook.getIsbn13() == null ||
-                borrowingRequestService == null || requestBorrowButton == null || currentBook.getAvailableQuantity() <= 0) {
-            // Nếu sách đã hết hàng, nút đã bị disable bởi updateAvailabilityInfo, không cần làm gì thêm
-            if (currentBook != null && currentBook.getAvailableQuantity() <= 0) {
-                return;
-            }
-            // Nếu các điều kiện khác không đáp ứng, có thể reset nút về trạng thái mặc định (nếu sách còn)
-            if (requestBorrowButton != null && currentBook != null && currentBook.getAvailableQuantity() > 0) {
-                requestBorrowButton.setDisable(false);
-                requestBorrowButton.setText("Gửi Yêu Cầu Mượn (" + currentBook.getAvailableQuantity() + " còn lại)");
-            }
+    private void checkIfUserHasPendingOrApprovedRequest() {
+        if (currentUser == null || currentBook == null || currentBook.getIsbn13() == null || borrowingRequestService == null || requestBorrowButton == null) {
             return;
         }
+        // Chỉ thực hiện nếu sách còn hàng (đã kiểm tra ở hàm gọi)
+        if (currentBook.getAvailableQuantity() <=0) return;
 
-        // Lấy danh sách yêu cầu một lần để tối ưu
         List<BorrowingRequest> userRequests = borrowingRequestService.getRequestsByUserId(currentUser.getUserId());
-
-        boolean hasPendingOrApproved = userRequests.stream()
-                .anyMatch(req -> req.getBookIsbn13().equals(currentBook.getIsbn13()) &&
+        Optional<BorrowingRequest> activeRequestOpt = userRequests.stream()
+                .filter(req -> currentBook.getIsbn13().equals(req.getBookIsbn13()) &&
                         (req.getStatus() == BorrowingRequest.RequestStatus.PENDING ||
-                                req.getStatus() == BorrowingRequest.RequestStatus.APPROVED));
+                                req.getStatus() == BorrowingRequest.RequestStatus.APPROVED))
+                .max(Comparator.comparing(BorrowingRequest::getRequestDate));
 
-        if (hasPendingOrApproved) {
+        if (activeRequestOpt.isPresent()) {
             requestBorrowButton.setDisable(true);
-            Optional<BorrowingRequest> latestRequestOpt = userRequests.stream()
-                    .filter(req -> req.getBookIsbn13().equals(currentBook.getIsbn13()) &&
-                            (req.getStatus() == BorrowingRequest.RequestStatus.PENDING || req.getStatus() == BorrowingRequest.RequestStatus.APPROVED))
-                    .max(Comparator.comparing(BorrowingRequest::getRequestDate)); // Lấy yêu cầu mới nhất
-
-            if (latestRequestOpt.isPresent()) {
-                if (latestRequestOpt.get().getStatus() == BorrowingRequest.RequestStatus.PENDING) {
-                    requestBorrowButton.setText("Đã Yêu Cầu (Chờ Duyệt)");
-                } else if (latestRequestOpt.get().getStatus() == BorrowingRequest.RequestStatus.APPROVED) {
-                    requestBorrowButton.setText("Đã Được Duyệt (Chờ Lấy)");
-                }
-            }
+            BorrowingRequest.RequestStatus status = activeRequestOpt.get().getStatus();
+            if (status == BorrowingRequest.RequestStatus.PENDING) requestBorrowButton.setText("Đang chờ duyệt");
+            else if (status == BorrowingRequest.RequestStatus.APPROVED) requestBorrowButton.setText("Đã duyệt (Chờ lấy)");
         } else {
-            // Nếu không có yêu cầu nào, và sách còn hàng (đã kiểm tra ở updateAvailabilityInfo)
             requestBorrowButton.setDisable(false);
-            requestBorrowButton.setText("Gửi Yêu Cầu Mượn (" + currentBook.getAvailableQuantity() + " còn lại)");
+            requestBorrowButton.setText("Gửi Yêu Cầu Mượn");
         }
     }
 
-    private void loadCoverImage(String imageUrl) {
+    private void loadCoverImageUI(String imageUrl) {
         if (detailCoverImageView == null) return;
         Image imageToSet = this.defaultBookCoverImage;
-        if (imageUrl != null && !imageUrl.isEmpty()) {
-            String finalImageUrl = imageUrl.startsWith("//") ? "https:" + imageUrl : imageUrl;
+        if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+            String finalImageUrl = imageUrl.trim();
+            if (finalImageUrl.startsWith("//")) finalImageUrl = "https:" + finalImageUrl;
             try {
-                Image loadedImage = new Image(finalImageUrl, true);
-                if (!loadedImage.isError()) {
-                    imageToSet = loadedImage;
-                } else {
-                    System.err.println("ERROR_BDC_LOAD_COVER: Error with image from URL (isError=true): " + finalImageUrl +
-                            (loadedImage.getException() != null ? " - " + loadedImage.getException().getMessage() : ""));
+                imageToSet = new Image(finalImageUrl, true);
+                if (imageToSet.isError()) {
+                    System.err.println("WARN_BDC_COVER: Error loading cover from: " + finalImageUrl);
+                    imageToSet = this.defaultBookCoverImage;
                 }
-                // Listener lỗi nên được thêm trước khi gán ảnh để bắt lỗi tải ngầm
-                loadedImage.errorProperty().addListener((obs, oldError, newError) -> {
-                    if (newError && detailCoverImageView.getImage() == loadedImage) { // Chỉ set lại nếu ảnh đang hiển thị là ảnh lỗi
-                        System.err.println("ERROR_BDC_LOAD_COVER_ASYNC: Error loading image from URL: " + finalImageUrl);
-                        if (this.defaultBookCoverImage != null) {
-                            detailCoverImageView.setImage(this.defaultBookCoverImage);
-                        }
-                    }
-                });
             } catch (Exception e) {
-                System.err.println("CRITICAL_BDC_LOAD_COVER: Exception creating Image for URL: " + finalImageUrl + " - " + e.getMessage());
+                System.err.println("ERROR_BDC_COVER: Exception loading cover: " + finalImageUrl + ". " + e.getMessage());
+                imageToSet = this.defaultBookCoverImage;
             }
         }
         detailCoverImageView.setImage(imageToSet);
     }
 
     @FXML
+    void handleFavoriteAction(ActionEvent event) {
+        if (currentUser == null || currentBook == null || favoriteBookService == null) {
+            showAlert(Alert.AlertType.WARNING, "Yêu Cầu Đăng Nhập", "Vui lòng đăng nhập để thao tác.");
+            return;
+        }
+        if (currentBook.getInternalId() <= 0) {
+            showAlert(Alert.AlertType.ERROR, "Lỗi Sách", "Sách không có ID hợp lệ.");
+            return;
+        }
+
+        boolean isCurrentlyFavorite = favoriteBookService.isFavorite(currentUser.getUserId(), currentBook.getInternalId());
+        boolean success;
+        if (isCurrentlyFavorite) {
+            success = favoriteBookService.removeFavorite(currentUser.getUserId(), currentBook.getInternalId());
+            if (success) showAlert(Alert.AlertType.INFORMATION, "Yêu Thích", "Đã bỏ yêu thích sách '" + currentBook.getTitleOrDefault("N/A") + "'.");
+            else showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể bỏ yêu thích.");
+        } else {
+            success = favoriteBookService.addFavorite(currentUser.getUserId(), currentBook.getInternalId());
+            if (success) showAlert(Alert.AlertType.INFORMATION, "Yêu Thích", "Đã thêm '" + currentBook.getTitleOrDefault("N/A") + "' vào danh sách yêu thích.");
+            else showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể thêm vào yêu thích.");
+        }
+        if (success) updateFavoriteButtonStatus();
+    }
+
+    private void updateFavoriteButtonStatus() {
+        if (currentUser == null || currentBook == null || favoriteButton == null || favoriteBookService == null || currentBook.getInternalId() <= 0) {
+            if (favoriteButton != null) favoriteButton.setDisable(true);
+            return;
+        }
+        favoriteButton.setDisable(false);
+        if (favoriteBookService.isFavorite(currentUser.getUserId(), currentBook.getInternalId())) {
+            favoriteButton.setText(HEART_FULL);
+            favoriteButton.getStyleClass().setAll("button", "favorite-button-active");
+        } else {
+            favoriteButton.setText(HEART_EMPTY);
+            favoriteButton.getStyleClass().setAll("button", "favorite-button-inactive");
+        }
+    }
+
+    private void loadBookReviewsAndRating() {
+        if (currentBook == null || bookReviewService == null || reviewsListView == null || averageRatingDisplayLabel == null || averageRatingStarsPane == null) {
+            if (averageRatingDisplayLabel!=null) averageRatingDisplayLabel.setText("Chưa có đánh giá");
+            if (averageRatingStarsPane!=null) averageRatingStarsPane.getChildren().clear();
+            if (reviewsListView!=null) reviewsListView.setPlaceholder(new Label("Chưa có đánh giá nào."));
+            return;
+        }
+        int bookInternalId = currentBook.getInternalId();
+        if (bookInternalId <= 0) {
+            averageRatingDisplayLabel.setText("Sách không hợp lệ.");
+            reviewsListView.setPlaceholder(new Label("Sách không hợp lệ."));
+            averageRatingStarsPane.getChildren().clear();
+            return;
+        }
+
+        Optional<Double> avgRatingOpt = bookReviewService.getAverageRatingForBook(bookInternalId);
+        List<BookReview> reviews = bookReviewService.getReviewsByBookInternalId(bookInternalId);
+
+        if (avgRatingOpt.isPresent()) {
+            averageRatingDisplayLabel.setText(String.format("%.1f/5 (%d đánh giá)", avgRatingOpt.get(), reviews.size()));
+            displayRatingStars(averageRatingStarsPane, avgRatingOpt.get());
+        } else {
+            averageRatingDisplayLabel.setText(reviews.isEmpty() ? "Chưa có đánh giá" : String.format("0.0/5 (%d đánh giá)", reviews.size()));
+            displayRatingStars(averageRatingStarsPane, 0);
+        }
+
+        if (reviews.isEmpty()) {
+            reviewsListView.setPlaceholder(new Label("Chưa có đánh giá nào. Hãy là người đầu tiên!"));
+        }
+        reviews.sort(Comparator.comparing(BookReview::getReviewDate).reversed());
+        reviewsListView.setItems(FXCollections.observableArrayList(reviews)); // Gán cho ListView
+    }
+
+    private void displayRatingStars(HBox starsPane, double rating) {
+        starsPane.getChildren().clear();
+        int roundedRating = (int) Math.round(rating);
+        for (int i = 1; i <= 5; i++) {
+            Label starLabel = new Label(i <= roundedRating ? "⭐" : "☆");
+            starLabel.getStyleClass().add("rating-star-display");
+            starsPane.getChildren().add(starLabel);
+        }
+    }
+
+    private void setupReviewsListViewCellFactory() {
+        reviewsListView.setCellFactory(lv -> new ListCell<BookReview>() {
+            private final VBox content = new VBox(8);
+            private final HBox authorAndRatingBox = new HBox(10);
+            private final Label authorNameLabel = new Label();
+            private final HBox reviewStarsDisplay = new HBox(2);
+            private final Label reviewDateLabel = new Label();
+            private final Label commentTextLabel = new Label();
+            {
+                authorNameLabel.getStyleClass().add("review-cell-author");
+                reviewDateLabel.getStyleClass().add("review-cell-date");
+                commentTextLabel.getStyleClass().add("review-cell-comment");
+                commentTextLabel.setWrapText(true);
+                commentTextLabel.setMaxWidth(Double.MAX_VALUE);
+                VBox.setVgrow(commentTextLabel, Priority.ALWAYS); // <<< Priority cần import
+
+                authorAndRatingBox.setAlignment(Pos.CENTER_LEFT);
+                authorAndRatingBox.getChildren().addAll(authorNameLabel, new Label("-"), reviewStarsDisplay);
+
+                content.getChildren().addAll(authorAndRatingBox, reviewDateLabel, commentTextLabel);
+                content.setPadding(new Insets(10));
+                content.getStyleClass().add("review-cell-content");
+            }
+            @Override
+            protected void updateItem(BookReview review, boolean empty) {
+                super.updateItem(review, empty);
+                if (empty || review == null) {
+                    setGraphic(null);
+                } else {
+                    authorNameLabel.setText(review.getUserUsername() != null ? review.getUserUsername() : "Người dùng ẩn danh");
+                    reviewDateLabel.setText("vào lúc " + review.getFormattedReviewDate());
+                    reviewStarsDisplay.getChildren().clear();
+                    if (review.getRating() > 0) {
+                        for (int i = 1; i <= 5; i++) {
+                            Label star = new Label(i <= review.getRating() ? "★" : "☆");
+                            star.getStyleClass().add("review-star-small-cell");
+                            reviewStarsDisplay.getChildren().add(star);
+                        }
+                    } else {
+                        Label noRatingText = new Label("(chưa đánh giá sao)");
+                        noRatingText.getStyleClass().add("no-rating-text");
+                        reviewStarsDisplay.getChildren().add(noRatingText);
+                    }
+                    commentTextLabel.setText(review.getCommentText());
+                    setGraphic(content);
+                }
+            }
+        });
+    }
+
+    @FXML
+    void handleSubmitReviewAction(ActionEvent event) {
+        if (currentUser == null) {
+            showAlert(Alert.AlertType.WARNING, "Yêu Cầu Đăng Nhập", "Bạn cần đăng nhập để gửi đánh giá.");
+            return;
+        }
+        if (currentBook == null || currentBook.getInternalId() <= 0) {
+            showAlert(Alert.AlertType.ERROR, "Lỗi Sách", "Sách không hợp lệ để đánh giá.");
+            return;
+        }
+        Integer rating = ratingComboBox.getValue();
+        String comment = newCommentTextArea.getText().trim();
+        if (rating == null && comment.isEmpty()) {
+            setReviewError("Vui lòng chọn số sao hoặc viết bình luận."); return;
+        }
+        int ratingValue = (rating != null) ? rating : 0;
+        if (ratingValue == 0 && comment.isEmpty() && rating == null) {
+            setReviewError("Vui lòng chọn số sao hoặc viết bình luận."); return;
+        }
+        clearReviewError();
+
+        BookReview newReview = new BookReview(currentBook.getInternalId(), currentUser.getUserId(), ratingValue, comment);
+        Optional<BookReview> submittedReviewOpt = bookReviewService.addReview(newReview);
+
+        if (submittedReviewOpt.isPresent()) {
+            showAlert(Alert.AlertType.INFORMATION, "Gửi Thành Công", "Cảm ơn bạn đã gửi đánh giá!");
+            newCommentTextArea.clear();
+            ratingComboBox.getSelectionModel().clearSelection();
+            ratingComboBox.setPromptText("Chọn sao");
+            loadBookReviewsAndRating();
+        } else {
+            showAlert(Alert.AlertType.ERROR, "Lỗi Gửi Đánh Giá", "Không thể gửi đánh giá. Bạn có thể đã đánh giá sách này hoặc có lỗi xảy ra.");
+        }
+    }
+
+    private void setReviewError(String message) {
+        if (reviewErrorLabel != null) {
+            reviewErrorLabel.setText(message);
+            reviewErrorLabel.setVisible(true);
+            reviewErrorLabel.setManaged(true);
+        }
+    }
+    private void clearReviewError() {
+        if (reviewErrorLabel != null) {
+            reviewErrorLabel.setText("");
+            reviewErrorLabel.setVisible(false);
+            reviewErrorLabel.setManaged(false);
+        }
+    }
+
+    @FXML
     void handleRequestBorrowAction(ActionEvent event) {
         if (currentUser == null) {
-            showAlert(Alert.AlertType.WARNING, "Yêu cầu đăng nhập", "Vui lòng đăng nhập để thực hiện chức năng này.");
+            showAlert(Alert.AlertType.WARNING, "Yêu Cầu Đăng Nhập", "Vui lòng đăng nhập để mượn sách.");
             return;
         }
-        if (currentBook == null || currentBook.getIsbn13() == null) {
-            showAlert(Alert.AlertType.ERROR, "Lỗi", "Không có thông tin sách hợp lệ để thực hiện yêu cầu.");
+        if (currentBook == null || currentBook.getIsbn13() == null || currentBook.getIsbn13().isEmpty()) {
+            showAlert(Alert.AlertType.ERROR, "Lỗi Sách", "Sách không hợp lệ để yêu cầu mượn.");
             return;
         }
 
-        // Kiểm tra lại số lượng sách và trạng thái yêu cầu một lần nữa ngay trước khi gửi
-        // để đảm bảo dữ liệu là mới nhất và tránh race condition.
+        // Luôn lấy thông tin sách mới nhất từ DB trước khi thực hiện hành động
         Optional<Book> freshBookOpt = bookManagementService.findBookByIsbn13InLibrary(currentBook.getIsbn13());
         if (freshBookOpt.isEmpty()) {
-            showAlert(Alert.AlertType.ERROR, "Lỗi Sách", "Sách không còn tồn tại trong thư viện.");
-            Platform.runLater(this::closeDialog);
+            handleMissingBookData("Sách này không còn tồn tại.");
             return;
         }
-        this.currentBook = freshBookOpt.get(); // Cập nhật lại currentBook
+        this.currentBook = freshBookOpt.get(); // Cập nhật currentBook với dữ liệu mới nhất
 
         if (currentBook.getAvailableQuantity() <= 0) {
-            showAlert(Alert.AlertType.WARNING, "Hết Sách", "Xin lỗi, cuốn sách '" + currentBook.getTitle() + "' vừa hết hàng.");
-            updateAvailabilityInfoAndRequestButton(); // Cập nhật lại UI
+            showAlert(Alert.AlertType.INFORMATION, "Hết Sách", "Sách '" + currentBook.getTitleOrDefault("N/A") + "' hiện đã hết hàng.");
+            updateAvailabilityInfoAndRequestButtonStatus(); // Cập nhật UI
             return;
         }
 
-        // Kiểm tra lại yêu cầu hiện có
-        boolean hasExistingRequest = borrowingRequestService.getRequestsByUserId(currentUser.getUserId()).stream()
-                .anyMatch(req -> req.getBookIsbn13().equals(currentBook.getIsbn13()) &&
-                        (req.getStatus() == BorrowingRequest.RequestStatus.PENDING ||
-                                req.getStatus() == BorrowingRequest.RequestStatus.APPROVED));
-
-        if (hasExistingRequest) {
-            showAlert(Alert.AlertType.INFORMATION, "Thông Báo", "Bạn đã có yêu cầu (đang chờ hoặc đã duyệt) cho cuốn sách này.");
-            checkIfUserHasPendingRequestForThisBook(); // Cập nhật lại nút
+        // Kiểm tra lại xem user có request đang chờ/đã duyệt cho sách này không
+        // (logic này được gọi bên trong updateAvailabilityInfoAndRequestButtonStatus)
+        // Nếu nút requestBorrowButton bị disable sau khi cập nhật, nghĩa là không thể gửi yêu cầu
+        if (requestBorrowButton.isDisable()) {
+            showAlert(Alert.AlertType.INFORMATION, "Thông Báo", requestBorrowButton.getText()); // Hiển thị lý do từ text của nút
             return;
         }
 
-
-        System.out.println("DEBUG_BDC_REQUEST: User '" + currentUser.getUsername() + "' requests to borrow book: '" + currentBook.getTitle() + "'");
         Optional<BorrowingRequest> requestOpt = borrowingRequestService.addRequest(currentUser.getUserId(), currentBook.getIsbn13());
-
         if (requestOpt.isPresent()) {
-            showAlert(Alert.AlertType.INFORMATION, "Yêu Cầu Đã Gửi",
-                    "Yêu cầu mượn sách '" + currentBook.getTitle() + "' của bạn đã được gửi.\n" +
-                            "Vui lòng đợi quản trị viên thư viện duyệt.");
+            showAlert(Alert.AlertType.INFORMATION, "Yêu Cầu Thành Công", "Đã gửi yêu cầu mượn sách '" + currentBook.getTitleOrDefault("N/A") + "'. Vui lòng chờ duyệt.");
+            // Gửi thông báo cho Admin
+            notificationService.createNotification(
+                    null, // userId là null cho thông báo hệ thống/admin
+                    "Người dùng '" + currentUser.getUsername() + "' yêu cầu mượn sách: " + currentBook.getTitleOrDefault("N/A") + " (ISBN: " + currentBook.getIsbn13() + ")",
+                    Notification.NotificationType.NEW_LOAN_REQUEST, // Đảm bảo Type này tồn tại
+                    requestOpt.get().getRequestId(), // relatedItemId
+                    null // actionLink
+            );
         } else {
-            // Service addRequest sẽ trả về Optional.empty() nếu user đã có yêu cầu hoặc sách không tồn tại/lỗi
-            showAlert(Alert.AlertType.WARNING, "Không thể gửi yêu cầu",
-                    "Yêu cầu mượn sách không thành công. \n" +
-                            "Có thể bạn đã có yêu cầu đang chờ duyệt cho cuốn sách này, sách vừa hết hàng, hoặc có lỗi xảy ra.");
+            showAlert(Alert.AlertType.ERROR, "Lỗi Yêu Cầu", "Không thể gửi yêu cầu. Bạn có thể đã có yêu cầu cho sách này.");
         }
-        // Luôn cập nhật lại trạng thái nút sau khi thực hiện hành động
-        updateAvailabilityInfoAndRequestButton();
+        updateAvailabilityInfoAndRequestButtonStatus(); // Cập nhật lại trạng thái nút
     }
 
     @FXML
     void handleCloseDetailAction(ActionEvent event) {
-        closeDialog();
+        navigateBackToPreviousView();
     }
 
-    private void closeDialog() {
-        // Đảm bảo code này chạy trên UI thread nếu được gọi từ luồng khác
-        if (Platform.isFxApplicationThread()) {
-            tryCloseStage();
+    private void navigateBackToPreviousView() {
+        if (this.dashboardController != null) {
+            this.dashboardController.loadViewIntoCenter("UserLibraryView.fxml"); // Hoặc view trước đó
+            SessionManager.getInstance().setSelectedBook(null); // Xóa sách khỏi session
         } else {
-            Platform.runLater(this::tryCloseStage);
-        }
-    }
-
-    private void tryCloseStage() {
-        if (closeDetailButton != null && closeDetailButton.getScene() != null && closeDetailButton.getScene().getWindow() instanceof Stage) {
-            Stage stage = (Stage) closeDetailButton.getScene().getWindow();
-            stage.close();
-        } else {
-            System.err.println("ERROR_BDC_CLOSE: Cannot get stage from closeDetailButton to close dialog.");
-            // Nếu không lấy được stage từ nút, thử lấy từ một FXML element khác nếu có
-            // Hoặc controller này cần một tham chiếu đến Stage của nó nếu nó luôn là dialog.
+            System.err.println("WARN_BDC_CLOSE: dashboardController is null. Cannot navigate back.");
+            // Fallback an toàn: có thể không làm gì hoặc hiển thị thông báo
+            showAlert(Alert.AlertType.INFORMATION, "Thông Báo", "Vui lòng sử dụng thanh điều hướng.");
         }
     }
 
@@ -324,14 +532,16 @@ public class BookDetailController implements Initializable {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
+        applyDialogStyles(alert);
+        alert.showAndWait();
+    }
+
+    private void applyDialogStyles(Dialog<?> dialog) {
         try {
             URL cssUrl = getClass().getResource("/com/lms/quanlythuvien/css/styles.css");
             if (cssUrl != null) {
-                alert.getDialogPane().getStylesheets().add(cssUrl.toExternalForm());
+                dialog.getDialogPane().getStylesheets().add(cssUrl.toExternalForm());
             }
-        } catch (Exception e) {
-            System.err.println("Failed to load CSS for alert: " + e.getMessage());
-        }
-        alert.showAndWait();
+        } catch (Exception e) { System.err.println("WARN_DIALOG_CSS: Failed to load CSS for dialog: " + e.getMessage()); }
     }
 }

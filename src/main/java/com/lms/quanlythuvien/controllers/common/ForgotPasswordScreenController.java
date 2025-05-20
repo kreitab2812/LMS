@@ -1,8 +1,11 @@
 package com.lms.quanlythuvien.controllers.common;
 
 import com.lms.quanlythuvien.MainApp;
+import com.lms.quanlythuvien.models.user.User; // Thêm nếu dùng
 import com.lms.quanlythuvien.services.auth.EmailService;
 import com.lms.quanlythuvien.services.user.UserService;
+import com.lms.quanlythuvien.utils.security.PasswordUtils;
+import com.lms.quanlythuvien.utils.session.SessionManager;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -11,18 +14,22 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
+import javafx.scene.control.DialogPane; // Thêm cho applyDialogStyles
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Alert; // Thêm cho showAlert
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.MouseEvent; // Đã thêm
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Optional; // Thêm import này
 import java.util.ResourceBundle;
 import java.util.Random;
 
@@ -46,18 +53,19 @@ public class ForgotPasswordScreenController implements Initializable {
     @FXML private VBox newPasswordSubSection;
 
     @FXML private PasswordField newPasswordField;
-    @FXML private TextField newPasswordFieldVisible;
-    @FXML private ImageView toggleNewPasswordIcon; // Đổi từ ToggleButton sang ImageView
+    @FXML private TextField newPasswordFieldVisible; // Tên này được dùng trong code Java
+    @FXML private ImageView toggleNewPasswordIcon;
 
     @FXML private PasswordField confirmNewPasswordField;
-    @FXML private TextField confirmNewPasswordFieldVisible;
-    @FXML private ImageView toggleConfirmPasswordIcon; // Đổi từ ToggleButton sang ImageView
+    @FXML private TextField confirmNewPasswordFieldVisible; // <<< Đảm bảo FXML có fx:id="confirmNewPasswordFieldVisible"
+    @FXML private ImageView toggleConfirmPasswordIcon;
 
     @FXML private Button resetPasswordButton;
+    @FXML private Label errorDetailLabel;
 
     private UserService userService;
     private EmailService emailService;
-    // private VerificationCodeService codeService; // Service để quản lý mã OTP
+    // private VerificationCodeService codeService; // TODO: Nên có service riêng cho mã OTP
 
     private Image eyeIcon;
     private Image eyeSlashIcon;
@@ -66,244 +74,231 @@ public class ForgotPasswordScreenController implements Initializable {
 
     private Timeline countdownTimeline;
     private int countdownSeconds = 60;
-    private String currentSentCode;
+    private String currentSentCode; // Chỉ cho demo, không an toàn
     private String emailForPasswordReset;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         System.out.println("ForgotPasswordScreenController initialized.");
-
         userService = UserService.getInstance();
-        emailService = new EmailService();
+        emailService = new EmailService(); // Giả sử EmailService có thể tạo mới hoặc có getInstance()
 
-        // Tải icons
+        loadToggleIcons();
+        clearAllMessages();
+        showInitialState();
+
+        emailField.setOnKeyPressed(this::handleEmailFieldEnter);
+        codeField.setOnKeyPressed(this::handleCodeFieldEnter);
+        // Gán sự kiện Enter cho trường xác nhận mật khẩu cuối cùng
+        if (confirmNewPasswordField != null) confirmNewPasswordField.setOnKeyPressed(this::handleNewPasswordFieldEnter);
+        if (confirmNewPasswordFieldVisible != null) confirmNewPasswordFieldVisible.setOnKeyPressed(this::handleNewPasswordFieldEnter);
+    }
+
+    private void handleEmailFieldEnter(KeyEvent event) {
+        if (event.getCode().toString().equals("ENTER") && sendCodeButton.isVisible() && !sendCodeButton.isDisable()) {
+            handleSendCodeAction(null);
+        }
+    }
+    private void handleCodeFieldEnter(KeyEvent event) {
+        if (event.getCode().toString().equals("ENTER") && confirmCodeButton.isVisible() && !confirmCodeButton.isDisable()) {
+            handleConfirmCodeAction(null);
+        }
+    }
+    private void handleNewPasswordFieldEnter(KeyEvent event) {
+        if (event.getCode().toString().equals("ENTER") && resetPasswordButton.isVisible() && !resetPasswordButton.isDisable()) {
+            handleResetPasswordAction(null);
+        }
+    }
+
+    private void loadToggleIcons() {
         try {
             String eyeIconPath = "/com/lms/quanlythuvien/images/eye_icon.png";
             String eyeSlashIconPath = "/com/lms/quanlythuvien/images/eye_slash_icon.png";
-
-            InputStream eyeStream = getClass().getResourceAsStream(eyeIconPath);
-            if (eyeStream != null) eyeIcon = new Image(eyeStream);
-            else System.err.println("ERROR_FPSC_INIT: Cannot load eye_icon.png from " + eyeIconPath);
-
-            InputStream eyeSlashStream = getClass().getResourceAsStream(eyeSlashIconPath);
-            if (eyeSlashStream != null) eyeSlashIcon = new Image(eyeSlashStream);
-            else System.err.println("ERROR_FPSC_INIT: Cannot load eye_slash_icon.png from " + eyeSlashIconPath);
-
-            // Đặt icon mặc định là mắt đóng (eyeSlashIcon)
-            if (eyeSlashIcon != null) {
+            try (InputStream eyeStream = getClass().getResourceAsStream(eyeIconPath);
+                 InputStream eyeSlashStream = getClass().getResourceAsStream(eyeSlashIconPath)) {
+                if (eyeStream != null) eyeIcon = new Image(eyeStream);
+                else System.err.println("ERROR_FPSC_ICON: eye_icon.png not found from " + eyeIconPath);
+                if (eyeSlashStream != null) eyeSlashIcon = new Image(eyeSlashStream);
+                else System.err.println("ERROR_FPSC_ICON: eye_slash_icon.png not found from " + eyeSlashIconPath);
+            }
+            if (eyeSlashIcon != null && !eyeSlashIcon.isError()) { // Kiểm tra eyeSlashIcon trước khi dùng
                 if (toggleNewPasswordIcon != null) toggleNewPasswordIcon.setImage(eyeSlashIcon);
                 if (toggleConfirmPasswordIcon != null) toggleConfirmPasswordIcon.setImage(eyeSlashIcon);
-            } else {
-                System.err.println("ERROR_FPSC_INIT: eyeSlashIcon is null, cannot set default toggle images.");
             }
-        } catch (Exception e) {
-            System.err.println("CRITICAL_FPSC_INIT: Exception during eye icon loading: " + e.getMessage());
-            e.printStackTrace();
-        }
-
-        clearMessage();
-        showInitialState();
-        // Không cần bindBidirectional nữa vì đã có phương thức updatePasswordView xử lý đồng bộ
+        } catch (Exception e) { System.err.println("CRITICAL_FPSC_ICON: " + e.getMessage()); }
     }
 
     private void showInitialState() {
-        instructionLabel.setText("Nhập địa chỉ email đã đăng ký của bạn. Chúng tôi sẽ gửi một mã xác thực đến email đó.");
-        emailEntrySection.setManaged(true); emailEntrySection.setVisible(true);
-        sendCodeButton.setManaged(true); sendCodeButton.setVisible(true);
+        instructionLabel.setText("Nhập email đã đăng ký để nhận mã khôi phục.");
+        emailEntrySection.setVisible(true); emailEntrySection.setManaged(true);
         sendCodeButton.setDisable(false);
-        emailField.setDisable(false);
-        emailField.clear();
+        emailField.setDisable(false); emailField.clear();
+
+        resetProcessSection.setVisible(false); resetProcessSection.setManaged(false);
+        // Các sub-section bên trong resetProcessSection sẽ tự động ẩn/hiện theo nó
+
+        resendBox.setVisible(false); resendBox.setManaged(false);
+        if (countdownTimeline != null) countdownTimeline.stop();
+
         codeField.clear();
-        newPasswordField.clear();
-        newPasswordFieldVisible.clear();
-        confirmNewPasswordField.clear();
-        confirmNewPasswordFieldVisible.clear();
-
-        isNewPasswordTextVisible = false; // Reset trạng thái
-        isConfirmNewPasswordTextVisible = false;
-        updatePasswordView(newPasswordField, newPasswordFieldVisible, toggleNewPasswordIcon, isNewPasswordTextVisible);
-        updatePasswordView(confirmNewPasswordField, confirmNewPasswordFieldVisible, toggleConfirmPasswordIcon, isConfirmNewPasswordTextVisible);
-
-        resendBox.setManaged(false); resendBox.setVisible(false);
-        resetProcessSection.setManaged(false); resetProcessSection.setVisible(false);
-        codeEntrySubSection.setManaged(true); codeEntrySubSection.setVisible(true);
-        newPasswordSubSection.setManaged(false); newPasswordSubSection.setVisible(false);
+        newPasswordField.clear(); newPasswordFieldVisible.clear();
+        confirmNewPasswordField.clear(); confirmNewPasswordFieldVisible.clear(); // Sử dụng đúng tên biến
+        isNewPasswordTextVisible = false; isConfirmNewPasswordTextVisible = false;
+        updatePasswordView(newPasswordField, newPasswordFieldVisible, toggleNewPasswordIcon, false);
+        updatePasswordView(confirmNewPasswordField, confirmNewPasswordFieldVisible, toggleConfirmPasswordIcon, false); // Sử dụng đúng tên biến
+        Platform.runLater(emailField::requestFocus);
     }
 
-    private void showCodeEntryStateOnly() {
-        instructionLabel.setText("Mã xác thực đã được gửi đến " + emailForPasswordReset + ". Vui lòng nhập mã vào ô bên dưới.");
-        emailEntrySection.setManaged(false); emailEntrySection.setVisible(false);
-        sendCodeButton.setManaged(false); sendCodeButton.setVisible(false);
+    private void showCodeEntryState() {
+        instructionLabel.setText("Mã xác thực 6 chữ số đã được gửi đến:\n" + emailForPasswordReset);
+        emailEntrySection.setVisible(false); emailEntrySection.setManaged(false);
 
-        resendBox.setManaged(true); resendBox.setVisible(true);
+        resetProcessSection.setVisible(true); resetProcessSection.setManaged(true);
+        codeEntrySubSection.setVisible(true); codeEntrySubSection.setManaged(true);
+        newPasswordSubSection.setVisible(false); newPasswordSubSection.setManaged(false);
 
-        resetProcessSection.setManaged(true); resetProcessSection.setVisible(true);
-        codeEntrySubSection.setManaged(true); codeEntrySubSection.setVisible(true);
-        newPasswordSubSection.setManaged(false); newPasswordSubSection.setVisible(false);
-
-        Platform.runLater(() -> codeField.requestFocus());
+        resendBox.setVisible(true); resendBox.setManaged(true);
+        codeField.clear();
+        Platform.runLater(codeField::requestFocus);
     }
 
-    private void showNewPasswordEntryState() {
-        instructionLabel.setText("Mã xác thực chính xác. Vui lòng đặt mật khẩu mới.");
-        resendBox.setManaged(false); resendBox.setVisible(false);
+    private void showNewPasswordState() {
+        instructionLabel.setText("Mã xác thực chính xác. Đặt mật khẩu mới cho:\n" + emailForPasswordReset);
+        emailEntrySection.setVisible(false); emailEntrySection.setManaged(false);
+        resendBox.setVisible(false); resendBox.setManaged(false);
 
-        resetProcessSection.setManaged(true); resetProcessSection.setVisible(true);
-        codeEntrySubSection.setManaged(false); codeEntrySubSection.setVisible(false);
-        newPasswordSubSection.setManaged(true); newPasswordSubSection.setVisible(true);
+        resetProcessSection.setVisible(true); resetProcessSection.setManaged(true);
+        codeEntrySubSection.setVisible(false); codeEntrySubSection.setManaged(false);
+        newPasswordSubSection.setVisible(true); newPasswordSubSection.setManaged(true);
 
-        Platform.runLater(() -> newPasswordField.requestFocus());
+        newPasswordField.clear(); newPasswordFieldVisible.clear();
+        confirmNewPasswordField.clear(); confirmNewPasswordFieldVisible.clear(); // Sử dụng đúng tên biến
+        isNewPasswordTextVisible = false; isConfirmNewPasswordTextVisible = false;
+        updatePasswordView(newPasswordField, newPasswordFieldVisible, toggleNewPasswordIcon, false);
+        updatePasswordView(confirmNewPasswordField, confirmNewPasswordFieldVisible, toggleConfirmPasswordIcon, false); // Sử dụng đúng tên biến
+        Platform.runLater(newPasswordField::requestFocus);
     }
 
     @FXML
     private void handleBackButtonAction(ActionEvent event) {
-        System.out.println("Back button on Forgot Password screen clicked.");
-        if (countdownTimeline != null) {
-            countdownTimeline.stop();
-        }
-        // showInitialState(); // Không cần thiết vì sẽ load scene mới
+        if (countdownTimeline != null) countdownTimeline.stop();
         MainApp.loadScene("common/LoginScreen.fxml");
     }
 
     @FXML
     private void handleSendCodeAction(ActionEvent event) {
         emailForPasswordReset = emailField.getText().trim();
-        clearMessage();
-
-        if (emailForPasswordReset.isEmpty()) {
-            showMessage("Vui lòng nhập địa chỉ email.", true); return;
+        clearAllMessages();
+        if (emailForPasswordReset.isEmpty() || !emailForPasswordReset.matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
+            showErrorDetail("Định dạng email không hợp lệ."); return;
         }
-        if (!emailForPasswordReset.matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
-            showMessage("Định dạng email không hợp lệ.", true); return;
-        }
-
         if (!userService.isEmailTaken(emailForPasswordReset)) {
-            showMessage("Địa chỉ email này chưa được đăng ký trong hệ thống.", true);
-            return;
+            showErrorDetail("Email này chưa được đăng ký."); return;
         }
 
-        System.out.println("Attempting to send verification code to: " + emailForPasswordReset);
         currentSentCode = generateRandomCode(6);
-        System.out.println("Generated code for " + emailForPasswordReset + ": " + currentSentCode);
+        System.out.println("INFO_FPSC: Generated code " + currentSentCode + " for " + emailForPasswordReset);
+        // TODO: Lưu code vào DB/Cache với thời gian hết hạn
 
-        // TODO: Lưu currentSentCode và emailForPasswordReset vào DB/Cache với thời gian hết hạn
-        // Ví dụ: codeService.storeVerificationCode(emailForPasswordReset, currentSentCode, 600);
+        String subject = "Mã khôi phục mật khẩu - Thư viện UETLIB";
+        String body = "Mã xác thực của bạn là: " + currentSentCode + "\nMã này có hiệu lực trong 5 phút.";
 
-        String subject = "Mã xác thực khôi phục mật khẩu - Thư viện UET-VNU";
-        String body = "Chào bạn,\n\nMã xác thực của bạn để khôi phục mật khẩu là: " + currentSentCode +
-                "\nMã này có hiệu lực trong 10 phút.\nNếu bạn không yêu cầu thao tác này, vui lòng bỏ qua email này.\n\nTrân trọng,\nThư viện UET-VNU";
+        // SỬA LỖI: Gọi đúng tên phương thức sendVerificationCode
+        boolean emailSent = emailService.sendVerificationCode(emailForPasswordReset, subject, body);
 
-        boolean emailSentSuccess = emailService.sendVerificationCode(emailForPasswordReset, subject, body);
-
-        if (!emailSentSuccess) {
-            showMessage("Lỗi: Không thể gửi mã xác thực. Vui lòng thử lại sau hoặc kiểm tra cấu hình email.", true);
-            return;
+        if (emailSent) {
+            showMessage("Mã xác thực đã được gửi tới " + emailForPasswordReset + ".", false);
+            showCodeEntryState();
+            startCountdown();
+        } else {
+            showMessage("Lỗi gửi email. Vui lòng thử lại sau.", true);
         }
-
-        showMessage("Mã xác thực đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư (bao gồm cả thư mục Spam/Junk).", false);
-        startCountdown();
-        showCodeEntryStateOnly();
     }
 
     @FXML
     private void handleResendCodeAction(ActionEvent event) {
-        clearMessage();
+        clearAllMessages();
         if (emailForPasswordReset == null || emailForPasswordReset.isEmpty()) {
-            showMessage("Lỗi: Không tìm thấy địa chỉ email để gửi lại mã. Vui lòng thử lại từ đầu.", true);
-            showInitialState();
-            return;
+            showMessage("Lỗi: Không có email để gửi lại mã.", true); showInitialState(); return;
         }
-        System.out.println("Resend code requested for: " + emailForPasswordReset);
-
         currentSentCode = generateRandomCode(6);
-        System.out.println("Generated new code for " + emailForPasswordReset + ": " + currentSentCode);
+        System.out.println("INFO_FPSC: Resent code " + currentSentCode + " for " + emailForPasswordReset);
+        // TODO: Cập nhật mã mới trong DB/Cache
 
-        // TODO: Lưu mã mới
-        // codeService.storeVerificationCode(emailForPasswordReset, currentSentCode, 600);
+        String subject = "Mã khôi phục mật khẩu mới - Thư viện UETLIB";
+        String body = "Mã xác thực mới của bạn là: " + currentSentCode + "\nMã này có hiệu lực trong 5 phút.";
 
-        String subjectResend = "Mã xác thực mới - Thư viện UET-VNU";
-        String bodyResend = "Mã xác thực mới của bạn là: " + currentSentCode + "\nMã này có hiệu lực trong 10 phút.";
-        boolean emailResentSuccess = emailService.sendVerificationCode(emailForPasswordReset, subjectResend, bodyResend);
-
-        if (!emailResentSuccess) {
-            showMessage("Lỗi: Không thể gửi lại mã xác thực. Vui lòng thử lại sau.", true);
-            return;
+        // SỬA LỖI: Gọi đúng tên phương thức sendVerificationCode
+        if (emailService.sendVerificationCode(emailForPasswordReset, subject, body)) {
+            showMessage("Mã xác thực mới đã được gửi.", false);
+            startCountdown();
+        } else {
+            showMessage("Lỗi gửi lại email. Vui lòng thử lại sau.", true);
         }
-
-        showMessage("Một mã xác thực mới đã được gửi đến email của bạn.", false);
-        startCountdown();
     }
 
     @FXML
     private void handleConfirmCodeAction(ActionEvent event) {
-        String code = codeField.getText().trim();
-        clearMessage();
-
-        if (code.isEmpty()) { showMessage("Vui lòng nhập mã xác thực.", true); return; }
-        if (code.length() != 6 || !code.matches("\\d{6}")) {
-            showMessage("Mã xác thực phải là 6 chữ số.", true); return;
+        String enteredCode = codeField.getText().trim();
+        clearAllMessages();
+        if (enteredCode.isEmpty() || !enteredCode.matches("\\d{6}")) {
+            showErrorDetail("Mã xác thực phải là 6 chữ số."); return;
         }
-
-        // TODO: Xác thực mã code với mã đã lưu (dùng codeService)
-        // boolean isCodeValid = codeService.verifyCode(emailForPasswordReset, code);
-        // if (!isCodeValid) { ... }
-        if (!code.equals(currentSentCode)) { // Chỉ cho mục đích demo
-            showMessage("Mã xác thực không đúng hoặc đã hết hạn. Vui lòng thử lại.", true);
-            codeField.requestFocus();
-            return;
+        // TODO: Xác thực code từ service
+        if (enteredCode.equals(currentSentCode)) { // Chỉ cho demo
+            showMessage("Mã xác thực chính xác.", false);
+            if (countdownTimeline != null) countdownTimeline.stop();
+            showNewPasswordState();
+        } else {
+            showErrorDetail("Mã xác thực không đúng hoặc đã hết hạn.");
         }
-
-        showMessage("Mã xác thực chính xác. Vui lòng đặt mật khẩu mới.", false);
-        if (countdownTimeline != null) {
-            countdownTimeline.stop();
-        }
-        showNewPasswordEntryState();
     }
 
     @FXML
     private void handleResetPasswordAction(ActionEvent event) {
         String newPassword = isNewPasswordTextVisible ? newPasswordFieldVisible.getText() : newPasswordField.getText();
-        String confirmNewPasswordText = isConfirmNewPasswordTextVisible ? confirmNewPasswordFieldVisible.getText() : confirmNewPasswordField.getText();
-        clearMessage();
+        String confirmNewPasswordVal = isConfirmNewPasswordTextVisible ? confirmNewPasswordFieldVisible.getText() : confirmNewPasswordField.getText(); // Đổi tên biến
+        clearAllMessages();
 
-        if (newPassword.isEmpty()) { showMessage("Vui lòng nhập mật khẩu mới.", true); return; }
-        if (confirmNewPasswordText.isEmpty()) { showMessage("Vui lòng xác nhận mật khẩu mới.", true); return; }
-        if (newPassword.length() < 7) { showMessage("Mật khẩu mới phải có ít nhất 7 ký tự.", true); return; }
-        if (!newPassword.equals(confirmNewPasswordText)) { showMessage("Mật khẩu mới và xác nhận mật khẩu không khớp.", true); return; }
+        if (newPassword.isEmpty() || newPassword.length() < 7) {
+            showErrorDetail("Mật khẩu mới phải có ít nhất 7 ký tự."); return;
+        }
+        if (!newPassword.equals(confirmNewPasswordVal)) {
+            showErrorDetail("Mật khẩu mới và xác nhận không khớp."); return;
+        }
 
-        // TODO: Cập nhật mật khẩu mới cho người dùng trong database (dùng UserService)
-        // String hashedNewPassword = PasswordUtils.hashPassword(newPassword);
-        // boolean passwordUpdated = userService.resetPasswordForEmail(emailForPasswordReset, hashedNewPassword);
-        // if (!passwordUpdated) { ... }
+        Optional<User> userOpt = userService.findUserByEmail(emailForPasswordReset);
+        if (userOpt.isEmpty()) {
+            showMessage("Lỗi: Không tìm thấy tài khoản với email " + emailForPasswordReset, true);
+            showInitialState(); return;
+        }
+        User userToUpdate = userOpt.get();
+        String newHashedPassword = PasswordUtils.hashPassword(newPassword);
 
-        System.out.println("Password reset successfully for " + emailForPasswordReset);
-        MainApp.loadScene("common/SuccessfulScreen.fxml");
+        if (userService.changePassword(userToUpdate.getUserId(), newHashedPassword)) {
+            System.out.println("INFO_FPSC: Password reset successfully for " + emailForPasswordReset);
+            SessionManager.getInstance().setSuccessScreenMessage("Khôi phục mật khẩu thành công!", "Bạn có thể đăng nhập bằng mật khẩu mới.");
+            SessionManager.getInstance().setSuccessScreenButton("Đăng nhập ngay", "common/LoginScreen.fxml");
+            MainApp.loadScene("common/SuccessfulScreen.fxml");
+        } else {
+            showMessage("Lỗi: Không thể cập nhật mật khẩu. Vui lòng thử lại.", true);
+        }
     }
 
     private void updatePasswordView(PasswordField pf, TextField tfVisible, ImageView toggleIcon, boolean showText) {
-        String currentText = showText ? pf.getText() : tfVisible.getText(); // Lấy text từ trường đang active
-        if (showText) { // Hiển thị text, ẩn PasswordField
+        String currentText = showText ? pf.getText() : tfVisible.getText();
+        if (showText) {
             tfVisible.setText(currentText);
-            tfVisible.setManaged(true);
-            tfVisible.setVisible(true);
-            pf.setManaged(false);
-            pf.setVisible(false);
-            if (toggleIcon != null && eyeIcon != null) toggleIcon.setImage(eyeIcon);
-            Platform.runLater(() -> {
-                tfVisible.requestFocus();
-                if (tfVisible.getText() != null) tfVisible.positionCaret(tfVisible.getText().length());
-            });
-        } else { // Ẩn text, hiển thị PasswordField
+            tfVisible.setManaged(true); tfVisible.setVisible(true);
+            pf.setManaged(false); pf.setVisible(false);
+            if (toggleIcon != null && eyeIcon != null && !eyeIcon.isError()) toggleIcon.setImage(eyeIcon); // Kiểm tra eyeIcon không null
+            Platform.runLater(() -> { tfVisible.requestFocus(); if (tfVisible.getText() != null) tfVisible.positionCaret(tfVisible.getText().length()); });
+        } else {
             pf.setText(currentText);
-            pf.setManaged(true);
-            pf.setVisible(true);
-            tfVisible.setManaged(false);
-            tfVisible.setVisible(false);
-            if (toggleIcon != null && eyeSlashIcon != null) toggleIcon.setImage(eyeSlashIcon);
-            Platform.runLater(() -> {
-                pf.requestFocus();
-                if (pf.getText() != null) pf.positionCaret(pf.getText().length());
-            });
+            pf.setManaged(true); pf.setVisible(true);
+            tfVisible.setManaged(false); tfVisible.setVisible(false);
+            if (toggleIcon != null && eyeSlashIcon != null && !eyeSlashIcon.isError()) toggleIcon.setImage(eyeSlashIcon); // Kiểm tra eyeSlashIcon không null
+            Platform.runLater(() -> { pf.requestFocus(); if (pf.getText() != null) pf.positionCaret(pf.getText().length()); });
         }
     }
 
@@ -316,71 +311,58 @@ public class ForgotPasswordScreenController implements Initializable {
     @FXML
     private void handleToggleConfirmPasswordIconClick(MouseEvent event) {
         isConfirmNewPasswordTextVisible = !isConfirmNewPasswordTextVisible;
+        // SỬA LỖI: Dùng đúng tên biến cho TextField của confirm password
         updatePasswordView(confirmNewPasswordField, confirmNewPasswordFieldVisible, toggleConfirmPasswordIcon, isConfirmNewPasswordTextVisible);
     }
 
     private void startCountdown() {
-        if (countdownTimeline != null) {
-            countdownTimeline.stop();
-        }
+        if (countdownTimeline != null) countdownTimeline.stop();
         countdownSeconds = 60;
-
         emailField.setDisable(true);
         sendCodeButton.setDisable(true);
         resendCodeButton.setDisable(true);
         updateCountdownLabel();
-
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), ev -> {
             countdownSeconds--;
             updateCountdownLabel();
             if (countdownSeconds <= 0) {
                 countdownTimeline.stop();
                 resendCodeButton.setDisable(false);
+                currentSentCode = null;
+                showMessage("Mã đã hết hạn. Yêu cầu mã mới.", true);
             }
         }));
-        countdownTimeline.setCycleCount(countdownSeconds);
+        countdownTimeline.setCycleCount(countdownSeconds + 1);
         countdownTimeline.play();
     }
 
     private void updateCountdownLabel() {
-        Platform.runLater(() -> {
-            if (countdownSeconds > 0) {
-                countdownLabel.setText("Gửi lại mã sau: " + countdownSeconds + "s");
-            } else {
-                countdownLabel.setText("Bạn có thể gửi lại mã.");
-            }
-        });
+        Platform.runLater(() -> countdownLabel.setText(countdownSeconds > 0 ? "Gửi lại sau: " + countdownSeconds + "s" : "Có thể gửi lại mã."));
     }
 
     private void showMessage(String message, boolean isError) {
         if (messageLabel != null) {
             messageLabel.setText(message);
-            messageLabel.getStyleClass().removeAll("error-label", "success-message");
-            if (isError) {
-                messageLabel.getStyleClass().add("error-label");
-            } else {
-                messageLabel.getStyleClass().add("success-message");
-            }
-            messageLabel.setVisible(true);
-            messageLabel.setManaged(true);
+            messageLabel.getStyleClass().removeAll("error-message", "success-message");
+            messageLabel.getStyleClass().add(isError ? "error-message" : "success-message");
+            messageLabel.setVisible(true); messageLabel.setManaged(true);
         }
     }
-
-    private void clearMessage() {
-        if (messageLabel != null) {
-            messageLabel.setText("");
-            messageLabel.setVisible(false);
-            messageLabel.setManaged(false);
-            messageLabel.getStyleClass().removeAll("error-label", "success-message");
-        }
+    private void showErrorDetail(String message) {
+        if (errorDetailLabel != null) {
+            errorDetailLabel.setText(message);
+            errorDetailLabel.setVisible(true); errorDetailLabel.setManaged(true);
+        } else { showMessage(message, true); }
+    }
+    private void clearAllMessages() {
+        if (messageLabel != null) { messageLabel.setText(""); messageLabel.setVisible(false); messageLabel.setManaged(false); }
+        if (errorDetailLabel != null) { errorDetailLabel.setText(""); errorDetailLabel.setVisible(false); errorDetailLabel.setManaged(false); }
     }
 
     private String generateRandomCode(int length) {
         Random random = new Random();
         StringBuilder code = new StringBuilder();
-        for (int i = 0; i < length; i++) {
-            code.append(random.nextInt(10));
-        }
+        for (int i = 0; i < length; i++) code.append(random.nextInt(10));
         return code.toString();
     }
 }

@@ -3,82 +3,121 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
 
-<VBox fx:id="loanManagementRoot" spacing="20.0" styleClass="root" stylesheets="@../../css/styles.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.admin.LoanManagementController"> <padding>
-    <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
-</padding>
+<VBox fx:id="loanManagementRoot" spacing="15.0" styleClass="subview-container-white" stylesheets="@/com/lms/quanlythuvien/css/styles.css" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.admin.AdminLoanManagementController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="15.0" />
+    </padding>
 
-    <Label styleClass="view-title" text="Quản lý Mượn/Trả Sách">
-        <font>
-            <Font name="System Bold" size="18.0" />
-        </font>
-    </Label>
+    <Label styleClass="view-title" text="Quản Lý Mượn - Trả Sách &amp; Yêu Cầu"/>
 
-    <GridPane hgap="10.0" vgap="10.0">
-        <columnConstraints>
-            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="150.0" />
-            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="250.0" />
-            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-        </columnConstraints>
-        <rowConstraints>
-            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-            <RowConstraints minHeight="10.0" prefHeight="40.0" vgrow="SOMETIMES" />
-        </rowConstraints>
+    <TabPane fx:id="loanManagementTabPane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+        <tabs>
+            <Tab text="Cho Mượn Thủ Công">
+                <content>
+                    <AnchorPane>
+                        <VBox spacing="15.0" AnchorPane.topAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.bottomAnchor="10.0">
+                            <GridPane hgap="10.0" vgap="10.0" style="-fx-margin-bottom: 15px;">
+                                <columnConstraints>
+                                    <ColumnConstraints hgrow="NEVER" minWidth="10.0" prefWidth="180.0" />
+                                    <ColumnConstraints hgrow="ALWAYS" minWidth="10.0" />
+                                    <ColumnConstraints hgrow="NEVER" minWidth="10.0" />
+                                </columnConstraints>
+                                <rowConstraints>
+                                    <RowConstraints minHeight="10.0" prefHeight="35.0" vgrow="SOMETIMES" />
+                                    <RowConstraints minHeight="10.0" prefHeight="35.0" vgrow="SOMETIMES" />
+                                    <RowConstraints minHeight="10.0" prefHeight="40.0" vgrow="SOMETIMES" />
+                                </rowConstraints>
 
-        <Label text="Người dùng (ID/Username):" GridPane.rowIndex="0" />
-        <TextField fx:id="userSearchField" promptText="Nhập ID hoặc Username" GridPane.columnIndex="1" GridPane.rowIndex="0" />
-        <Button fx:id="searchUserButton" onAction="#handleSearchUserAction" text="Tìm User" styleClass="secondary-button" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                                <Label text="Người dùng (ID/Username):" GridPane.rowIndex="0" styleClass="form-label"/>
+                                <TextField fx:id="userSearchField" promptText="Nhập ID hoặc Username" GridPane.columnIndex="1" GridPane.rowIndex="0" styleClass="form-input"/>
+                                <Button fx:id="searchUserButton" onAction="#handleSearchUserAction" text="Tìm User" styleClass="secondary-button-small" GridPane.columnIndex="2" GridPane.rowIndex="0" />
 
-        <Label text="Sách (ID/ISBN/Tiêu đề):" GridPane.rowIndex="1" />
-        <TextField fx:id="bookSearchField" promptText="Nhập ID, ISBN, hoặc Tiêu đề sách" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-        <Button fx:id="searchBookButton" onAction="#handleSearchBookAction" text="Tìm Sách" styleClass="secondary-button" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                <Label text="Sách (ISBN-13/Tiêu đề):" GridPane.rowIndex="1" styleClass="form-label"/>
+                                <TextField fx:id="bookSearchField" promptText="Nhập ISBN-13 hoặc Tiêu đề sách" GridPane.columnIndex="1" GridPane.rowIndex="1" styleClass="form-input"/>
+                                <Button fx:id="searchBookButton" onAction="#handleSearchBookAction" text="Tìm Sách" styleClass="secondary-button-small" GridPane.columnIndex="2" GridPane.rowIndex="1" />
 
-        <HBox spacing="10" alignment="CENTER_LEFT" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
-            <Label fx:id="selectedUserInfoLabel" text="User: (Chưa chọn)" wrapText="true"/>
-            <Label text="|" style="-fx-padding: 0 10 0 10;"/>
-            <Label fx:id="selectedBookInfoLabel" text="Sách: (Chưa chọn)" wrapText="true"/>
-        </HBox>
-        <Button fx:id="borrowBookButton" onAction="#handleBorrowBookAction" text="Cho Mượn Sách" styleClass="primary-button" disable="true" GridPane.columnIndex="2" GridPane.rowIndex="2" />
-    </GridPane>
+                                <HBox spacing="10" alignment="CENTER_LEFT" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
+                                    <Label fx:id="selectedUserInfoLabel" text="User: (Chưa chọn)" wrapText="true" styleClass="info-text-small"/>
+                                    <Label text="|" style="-fx-padding: 0 10 0 10; -fx-text-fill: #cccccc;"/>
+                                    <Label fx:id="selectedBookInfoLabel" text="Sách: (Chưa chọn)" wrapText="true" styleClass="info-text-small"/>
+                                </HBox>
+                                <Button fx:id="borrowBookButton" onAction="#handleBorrowBookAction" text="Xác Nhận Cho Mượn" styleClass="primary-button" disable="true" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                            </GridPane>
+                            <Label text="Lưu ý: Chức năng này dành cho việc admin trực tiếp cho mượn tại quầy." styleClass="form-note"/>
+                        </VBox>
+                    </AnchorPane>
+                </content>
+            </Tab>
 
-    <Label text="Các Lượt Mượn Đang Hoạt Động" styleClass="view-title">
-        <VBox.margin>
-            <Insets top="20.0" />
-        </VBox.margin>
-    </Label>
+            <Tab fx:id="pendingRequestsTab" text="Duyệt Yêu Cầu Mượn">
+                <content>
+                    <AnchorPane>
+                        <VBox spacing="10.0" AnchorPane.topAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.bottomAnchor="10.0">
+                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                <padding><Insets bottom="10.0" top="5.0" /></padding>
+                                <Label text="Lọc yêu cầu:" styleClass="filter-label"/>
+                                <TextField fx:id="pendingRequestsFilterField" promptText="Lọc theo ID yêu cầu, tên sách, người dùng..." HBox.hgrow="ALWAYS" styleClass="form-input-tab-search"/>
+                            </HBox>
+                            <TableView fx:id="pendingRequestsTableView" VBox.vgrow="ALWAYS">
+                                <columns>
+                                    <TableColumn fx:id="reqIdColumn" prefWidth="100.0" text="ID Yêu Cầu"/>
+                                    <TableColumn fx:id="reqBookTitleColumn" prefWidth="250.0" text="Sách Yêu Cầu"/>
+                                    <TableColumn fx:id="reqUserNameColumn" prefWidth="180.0" text="Người Yêu Cầu"/>
+                                    <TableColumn fx:id="reqDateColumn" prefWidth="120.0" text="Ngày Yêu Cầu"/>
+                                    <TableColumn fx:id="reqStatusColumn" prefWidth="120.0" text="Trạng Thái"/>
+                                    <TableColumn fx:id="reqActionColumn" prefWidth="150.0" text="Hành Động" style="-fx-alignment: CENTER;"/>
+                                </columns>
+                                <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY" /></columnResizePolicy>
+                                <placeholder><Label text="Không có yêu cầu mượn sách nào đang chờ duyệt."/></placeholder>
+                            </TableView>
+                        </VBox>
+                    </AnchorPane>
+                </content>
+            </Tab>
 
-    <HBox spacing="10" alignment="CENTER_LEFT">
-        <padding><Insets bottom="10.0" top="5.0" /></padding>
-        <Label text="Lọc danh sách:"/>
-        <TextField fx:id="activeLoansFilterField" promptText="Nhập từ khóa để lọc..."/>
-    </HBox>
-
-    <TableView fx:id="activeLoansTableView" prefHeight="300.0">
-        <columns>
-            <TableColumn fx:id="loanIdColumn" prefWidth="150.0" text="ID Lượt Mượn" />
-            <TableColumn fx:id="loanBookTitleColumn" prefWidth="250.0" text="Tiêu Đề Sách" />
-            <TableColumn fx:id="loanUserNameColumn" prefWidth="150.0" text="Người Mượn" />
-            <TableColumn fx:id="loanBorrowDateColumn" prefWidth="120.0" text="Ngày Mượn" />
-            <TableColumn fx:id="loanDueDateColumn" prefWidth="120.0" text="Ngày Hẹn Trả" />
-            <TableColumn fx:id="loanStatusColumn" prefWidth="100.0" text="Trạng Thái" />
-            <TableColumn fx:id="loanActionColumn" prefWidth="120.0" text="Hành Động" />
-        </columns>
-    </TableView>
-
-    <Button fx:id="returnBookButton" onAction="#handleReturnBookAction" text="Đánh Dấu Đã Trả" styleClass="danger-button" disable="true">
-        <VBox.margin>
-            <Insets top="10.0" />
-        </VBox.margin>
-    </Button>
-
+            <Tab fx:id="activeLoansTab" text="Quản Lý Mượn/Trả">
+                <content>
+                    <AnchorPane>
+                        <VBox spacing="10.0" AnchorPane.topAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.bottomAnchor="10.0">
+                            <Label text="Danh Sách Mượn Đang Hoạt Động &amp; Quá Hạn" styleClass="view-subtitle">
+                                <VBox.margin>
+                                    <Insets bottom="5.0"/>
+                                </VBox.margin>
+                            </Label>
+                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                <padding><Insets bottom="10.0" top="5.0" /></padding>
+                                <Label text="Lọc nhanh:" styleClass="filter-label"/>
+                                <TextField fx:id="activeLoansFilterField" promptText="Lọc theo ID mượn, tên sách, tên người mượn..." HBox.hgrow="ALWAYS" styleClass="form-input-tab-search"/>
+                            </HBox>
+                            <TableView fx:id="activeLoansTableView" VBox.vgrow="ALWAYS">
+                                <columns>
+                                    <TableColumn fx:id="loanIdColumn" prefWidth="80.0" text="ID Mượn" style="-fx-alignment: CENTER;"/>
+                                    <TableColumn fx:id="loanBookTitleColumn" prefWidth="250.0" text="Tiêu Đề Sách" />
+                                    <TableColumn fx:id="loanUserNameColumn" prefWidth="150.0" text="Người Mượn" />
+                                    <TableColumn fx:id="loanBorrowDateColumn" prefWidth="110.0" text="Ngày Mượn" />
+                                    <TableColumn fx:id="loanDueDateColumn" prefWidth="110.0" text="Hẹn Trả" />
+                                    <TableColumn fx:id="loanStatusColumn" prefWidth="100.0" text="Trạng Thái" />
+                                    <TableColumn fx:id="loanActionColumn" prefWidth="120.0" text="Hành Động" style="-fx-alignment: CENTER;"/>
+                                </columns>
+                                <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY" /></columnResizePolicy>
+                                <placeholder><Label text="Không có lượt mượn nào đang hoạt động hoặc quá hạn." styleClass="placeholder-text"/></placeholder>
+                            </TableView>
+                        </VBox>
+                    </AnchorPane>
+                </content>
+            </Tab>
+        </tabs>
+    </TabPane>
 </VBox>

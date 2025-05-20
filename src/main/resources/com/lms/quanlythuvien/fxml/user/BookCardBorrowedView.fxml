@@ -8,33 +8,46 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
-
-<VBox fx:id="bookCardRoot" spacing="10.0" styleClass="book-card" prefWidth="230.0" minWidth="210.0" alignment="TOP_LEFT" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.user.BookCardBorrowedController">
+<?import javafx.scene.Cursor?> <VBox fx:id="bookCardRoot" spacing="10.0" styleClass="book-card" prefWidth="230.0" minWidth="210.0"
+                                     alignment="TOP_LEFT" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1"
+                                     fx:controller="com.lms.quanlythuvien.controllers.user.BookCardBorrowedController"
+                                     onMouseClicked="#handleCardClicked">
     <padding>
         <Insets bottom="12.0" left="12.0" right="12.0" top="12.0" />
     </padding>
+    <cursor>
+        <Cursor fx:constant="HAND" /> </cursor>
     <children>
         <HBox spacing="12.0" alignment="TOP_LEFT">
-            <ImageView fx:id="coverImageView" fitHeight="120.0" fitWidth="80.0" pickOnBounds="true" preserveRatio="true" styleClass="book-card-cover-image"/>
-            <VBox spacing="5.0" HBox.hgrow="ALWAYS" alignment="TOP_LEFT">
-                <Label fx:id="titleLabel" styleClass="book-card-title" wrapText="true" text="Tên Sách Rất Dài Để Kiểm Tra Xuống Dòng Và Các Thứ Khác"/>
-                <Label fx:id="authorsLabel" styleClass="book-card-author" wrapText="true" text="Tên Tác Giả, Tác Giả Khác"/>
-                <Region VBox.vgrow="ALWAYS"/>
-                <Label fx:id="statusLabel" styleClass="book-card-status-borrowed" text="ĐANG MƯỢN"/>
-            </VBox>
+            <children>
+                <ImageView fx:id="coverImageView" fitHeight="120.0" fitWidth="80.0" pickOnBounds="true" preserveRatio="true" styleClass="book-card-cover-image"/>
+                <VBox spacing="5.0" HBox.hgrow="ALWAYS" alignment="TOP_LEFT">
+                    <children>
+                        <Label fx:id="titleLabel" styleClass="book-card-title" wrapText="true" text="Tên Sách Rất Dài Để Kiểm Tra Xuống Dòng Và Các Thứ Khác"/>
+                        <Label fx:id="authorsLabel" styleClass="book-card-author" wrapText="true" text="Tên Tác Giả, Tác Giả Khác"/>
+                        <Region VBox.vgrow="ALWAYS"/>
+                        <Label fx:id="statusLabel" styleClass="book-card-status-borrowed" text="ĐANG MƯỢN"/>
+                    </children>
+                </VBox>
+            </children>
         </HBox>
 
         <VBox spacing="6.0" styleClass="book-card-info-section">
             <padding>
                 <Insets top="8.0" />
             </padding>
-            <Label fx:id="borrowedOnLabel" styleClass="book-card-date-info" text="Mượn ngày: dd/MM/yyyy"/>
-            <Label fx:id="dueDateLabel" styleClass="book-card-date-info-due" text="Hạn trả: dd/MM/yyyy"/>
-            <HBox alignment="CENTER_LEFT" spacing="5.0" fx:id="progressBox"> <Label fx:id="daysRemainingLabel" styleClass="book-card-days-remaining" text="Còn X ngày"/>
-                <ProgressBar fx:id="dueDateProgress" prefWidth="100.0" progress="0.5" styleClass="book-card-progress" HBox.hgrow="ALWAYS"/>
-            </HBox>
+            <children>
+                <Label fx:id="borrowedOnLabel" styleClass="book-card-date-info" text="Mượn ngày: dd/MM/yyyy"/>
+                <Label fx:id="dueDateLabel" styleClass="book-card-date-info-due" text="Hạn trả: dd/MM/yyyy"/>
+                <HBox fx:id="progressBox" alignment="CENTER_LEFT" spacing="5.0" managed="false" visible="false">
+                    <children>
+                        <Label fx:id="daysRemainingLabel" styleClass="book-card-days-remaining" text="Còn X ngày"/>
+                        <ProgressBar fx:id="dueDateProgress" prefWidth="100.0" progress="0.5" styleClass="book-card-progress" HBox.hgrow="ALWAYS"/>
+                    </children>
+                </HBox>
+            </children>
         </VBox>
 
-        <Button fx:id="returnButton" text="Đánh Dấu Đã Trả" onAction="#handleReturnBookAction" maxWidth="Infinity" styleClass="primary-button-small" VBox.vgrow="NEVER"/>
+        <Button fx:id="returnButton" text="Đánh Dấu Đã Trả" onAction="#handleReturnBookAction" maxWidth="Infinity" styleClass="primary-button-small" VBox.vgrow="NEVER" managed="false" visible="false"/>
     </children>
 </VBox>

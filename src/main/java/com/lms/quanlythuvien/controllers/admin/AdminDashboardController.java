@@ -1,391 +1,364 @@
-package com.lms.quanlythuvien.controllers.admin; // Giả sử cậu đã chuyển vào package admin
+package com.lms.quanlythuvien.controllers.admin;
 
 import com.lms.quanlythuvien.MainApp;
-import com.lms.quanlythuvien.models.item.Book; // Đường dẫn model mới
-import com.lms.quanlythuvien.models.item.Quote; // Đường dẫn model mới
-import com.lms.quanlythuvien.models.user.User;   // Đường dẫn model mới
-import com.lms.quanlythuvien.services.library.GoogleBooksService; // Đường dẫn service mới
-import com.lms.quanlythuvien.utils.session.SessionManager;     // Đường dẫn util mới
+import com.lms.quanlythuvien.models.user.User;
+import com.lms.quanlythuvien.utils.session.SessionManager;
+// Import các controller con
+import com.lms.quanlythuvien.controllers.user.BookDetailController; // Vẫn giữ nếu admin có thể xem BookDetailView
+import com.lms.quanlythuvien.controllers.user.AuthorDetailController; // Controller cho chi tiết tác giả
 
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
 import javafx.collections.FXCollections;
-import javafx.concurrent.Task;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.Label;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
+import javafx.scene.control.DialogPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.FlowPane;
-import javafx.scene.layout.HBox;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
-import javafx.scene.text.TextAlignment;
-import javafx.util.Duration;
 
+
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream; // Thêm import này nếu bị thiếu
+import java.io.InputStream;
 import java.net.URL;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.ResourceBundle;
 
 public class AdminDashboardController implements Initializable {
 
-    @FXML private ComboBox<String> searchTypeComboBox;
-    @FXML private TextField searchField;
-    @FXML private Button searchButton;
-    @FXML private Label timeLabel;
-    @FXML private Label dateLabel;
-    @FXML private ImageView userAvatar;
-    @FXML private Label usernameLabel;
-    @FXML private HBox userInfoArea;
+    //<editor-fold desc="FXML Injections - Top Bar">
+    @FXML private ComboBox<String> adminGlobalSearchTypeComboBox;
+    @FXML private TextField adminGlobalSearchField;
+    @FXML private Button adminGlobalSearchButton;
+    @FXML private ImageView adminAvatarTopBar;
+    @FXML private Label adminUsernameLabelTopBar;
+    @FXML private Label adminRoleLabelTopBar;
+    @FXML private MenuButton adminActionsMenuButton;
+    @FXML private MenuItem adminViewProfileMenuItem;
+    @FXML private MenuItem adminSettingsMenuItem;
+    @FXML private MenuItem adminLogoutMenuItem;
+    //</editor-fold>
 
-    @FXML private Button homeButton;
-    @FXML private Button bookManagementButton;
-    @FXML private Button userManagementButton;
-    @FXML private Button loanManagementButton;
+    //<editor-fold desc="FXML Injections - Left Sidebar">
+    @FXML private Button navAdminHomeButton;
+    @FXML private Button navAdminNotificationsButton;
+    @FXML private Button navAdminBookManagementButton;
+    @FXML private Button navAdminAuthorManagementButton;
+    @FXML private Button navAdminUserManagementButton;
+    @FXML private Button navAdminLoanManagementButton;
+    @FXML private Button navAdminDonationManagementButton;
+    @FXML private Button navAdminFAQManagementButton;
+    //</editor-fold>
 
-    @FXML private StackPane mainContentArea;
+    @FXML private StackPane adminMainContentArea;
 
-    private Label greetingLabel;
-    private Label quoteTextLabel;
-    private Label quoteAuthorLabel;
-
-    private GoogleBooksService googleBooksService;
-    private List<Quote> quotesList;
-    private Timeline clockTimeline;
-    private Image defaultBookCoverImage;
+    private User currentAdmin;
+    private Button currentActiveSidebarButton = null;
+    private List<Button> sidebarButtons;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         System.out.println("DEBUG_ADC_INIT: AdminDashboardController initialize() started.");
-        // GoogleBooksService có thể vẫn được tạo mới nếu nó không quản lý trạng thái cần chia sẻ
-        // Hoặc nếu cậu muốn nó là Singleton, thì dùng GoogleBooksService.getInstance()
-        googleBooksService = new GoogleBooksService();
-        System.out.println("DEBUG_ADC_INIT: GoogleBooksService instantiated/retrieved.");
+        currentAdmin = SessionManager.getInstance().getCurrentUser();
 
-        searchTypeComboBox.setItems(FXCollections.observableArrayList("Tất cả", "Tiêu đề", "Tác giả", "Chủ đề", "Nội dung"));
-        searchTypeComboBox.setValue("Tất cả");
-
-        User currentUser = SessionManager.getInstance().getCurrentUser();
-        if (currentUser != null) {
-            usernameLabel.setText(currentUser.getUsername());
-            // TODO: Load avatar của currentUser nếu có trường avatarUrl
+        if (currentAdmin != null && currentAdmin.getRole() == User.Role.ADMIN) {
+            SessionManager.getInstance().registerController("AdminDashboardController", this);
+            initializeSidebarButtons();
+            populateTopBarAdminInfo();
+            setupAdminGlobalSearchComboBox();
+            if (adminGlobalSearchField != null) {
+                adminGlobalSearchField.setOnKeyPressed(event -> {
+                    if (event.getCode().toString().equals("ENTER") && adminGlobalSearchButton != null && !adminGlobalSearchButton.isDisable()) {
+                        handleAdminGlobalSearch(new ActionEvent(adminGlobalSearchButton, null));
+                    }
+                });
+            }
+            handleAdminNavHome(null); // Load trang chủ admin mặc định
         } else {
-            usernameLabel.setText("Admin"); // Fallback
-            System.err.println("WARN_ADC_INIT: No user found in session for AdminDashboard. Displaying default username.");
+            System.err.println("ERROR_ADC_INIT: No admin user or not ADMIN role. Redirecting to login.");
+            SessionManager.getInstance().clearSession();
+            MainApp.loadScene("common/LoginScreen.fxml");
         }
-
-        try {
-            InputStream avatarStream = getClass().getResourceAsStream("/com/lms/quanlythuvien/images/default_avatar.png");
-            if (userAvatar != null && avatarStream != null) {
-                userAvatar.setImage(new Image(avatarStream));
-            } else if (userAvatar == null) {
-                System.err.println("ERROR_ADC_INIT: userAvatar ImageView is null.");
-            } else {
-                System.err.println("ERROR_ADC_INIT: Default avatar image not found.");
-            }
-
-            InputStream bookCoverStream = getClass().getResourceAsStream("/com/lms/quanlythuvien/images/default_book_cover.png");
-            if (bookCoverStream != null) {
-                defaultBookCoverImage = new Image(bookCoverStream);
-            } else {
-                System.err.println("ERROR_ADC_INIT: Default book cover image not found.");
-            }
-        } catch (Exception e) {
-            System.err.println("ERROR_ADC_INIT: AdminDashboard - Error loading default images: " + e.getMessage());
-            e.printStackTrace();
-        }
-
-        setupClock();
-        loadHomeView();
-        setActiveMenuButton(homeButton);
         System.out.println("DEBUG_ADC_INIT: AdminDashboardController initialize() finished.");
     }
 
-    private void setupClock() {
-        // Giữ nguyên logic của cậu
-        clockTimeline = new Timeline(new KeyFrame(Duration.ZERO, e -> {
-            LocalTime currentTime = LocalTime.now();
-            LocalDateTime currentDateTime = LocalDateTime.now();
-            if (timeLabel != null) timeLabel.setText(currentTime.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
-            if (dateLabel != null) dateLabel.setText(currentDateTime.format(DateTimeFormatter.ofPattern("dd-MMM-yyyy")));
-            if (greetingLabel != null) {
-                updateGreeting(currentTime);
-            }
-        }), new KeyFrame(Duration.seconds(1)));
-        clockTimeline.setCycleCount(Timeline.INDEFINITE);
-        clockTimeline.play();
+    private void initializeSidebarButtons() {
+        sidebarButtons = Arrays.asList(
+                navAdminHomeButton, navAdminNotificationsButton, navAdminBookManagementButton,
+                navAdminAuthorManagementButton, navAdminUserManagementButton,
+                navAdminLoanManagementButton, navAdminDonationManagementButton, navAdminFAQManagementButton
+        );
     }
 
-    private void updateGreeting(LocalTime time) {
-        // Giữ nguyên logic của cậu, nhưng lấy username từ SessionManager
-        if (greetingLabel == null) return;
-        int hour = time.getHour();
-        String username = "Admin"; // Default
-        User currentUser = SessionManager.getInstance().getCurrentUser();
-        if (currentUser != null) {
-            username = currentUser.getUsername();
-        }
-        String greetingText = "Chào buổi tối, " + username + "!";
-        if (hour >= 5 && hour < 12) {
-            greetingText = "Chào buổi sáng, " + username + "!";
-        } else if (hour >= 12 && hour < 18) {
-            greetingText = "Chào buổi chiều, " + username + "!";
-        }
-        greetingLabel.setText(greetingText);
-    }
-
-    private void loadHomeView() {
-        // Giả sử HomeView.fxml nằm trong fxml/admin/
-        // (Đảm bảo đường dẫn này đúng với cấu trúc thư mục FXML mới của cậu)
-        loadViewIntoMainContent("/com/lms/quanlythuvien/fxml/admin/HomeView.fxml");
-        // Logic lấy greetingLabel, quoteTextLabel, quoteAuthorLabel từ loader.getNamespace()
-        // cần được đặt bên trong loadViewIntoMainContent nếu muốn nó áp dụng cho mọi view
-        // hoặc xử lý riêng sau khi loadHomeView thành công.
-        // Hiện tại, loadViewIntoMainContent chỉ tải Parent, không trả về loader.
-        // Để lấy các control từ view con, cậu cần sửa loadViewIntoMainContent để trả về loader
-        // hoặc để HomeViewController tự quản lý các label đó.
-        // Cách đơn giản là để HomeViewController tự quản lý.
-        // Nếu các label đó là của AdminDashboard thì phải đảm bảo chúng không bị null khi HomeView chưa được load
-        // Hoặc chỉ gọi updateGreeting và displayRandomQuote sau khi loader.getNamespace() thành công.
-
-        // Để code hiện tại hoạt động (lấy label từ namespace), loadViewIntoMainContent cần trả về Node
-        // và logic lấy label từ namespace sẽ ở đây.
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/lms/quanlythuvien/fxml/admin/HomeView.fxml"));
-            Node homeViewNode = loader.load();
-            mainContentArea.getChildren().setAll(homeViewNode);
-
-            // Logic này chỉ hoạt động nếu HomeView.fxml KHÔNG CÓ fx:controller riêng
-            // và các fx:id đó được định nghĩa trực tiếp trong HomeView.fxml
-            // Nếu HomeView.fxml có controller riêng, thì HomeViewController sẽ quản lý các label đó.
-            // Giả sử HomeView.fxml không có controller riêng và các label đó là của AdminDashboard
-            // thì việc này sẽ gây lỗi nếu các label này không phải là con trực tiếp của homeViewNode
-            // hoặc nếu namespace không chứa chúng.
-            // TỐT NHẤT: HomeViewController nên tự quản lý greeting và quote của nó.
-            // Bỏ các dòng lấy label này nếu chúng thuộc về HomeViewController.
-            // greetingLabel = (Label) loader.getNamespace().get("greetingLabel");
-            // quoteTextLabel = (Label) loader.getNamespace().get("quoteTextLabel");
-            // quoteAuthorLabel = (Label) loader.getNamespace().get("quoteAuthorLabel");
-            // if (greetingLabel != null) updateGreeting(LocalTime.now());
-            // displayRandomQuote();
-
-        } catch (Exception e) {
-            System.err.println("ERROR_ADC_LOAD_HOME: Error loading Home content.");
-            e.printStackTrace();
-            mainContentArea.getChildren().setAll(new Label("Lỗi tải nội dung Trang chủ: " + e.getMessage()));
+    private void setupAdminGlobalSearchComboBox() {
+        if (adminGlobalSearchTypeComboBox != null) {
+            ObservableList<String> searchTypes = FXCollections.observableArrayList(
+                    "Tất cả (Sách)", "Sách (Tiêu đề/ISBN)", "Tác giả", "Người dùng (Username/Email)"
+            );
+            adminGlobalSearchTypeComboBox.setItems(searchTypes);
+            adminGlobalSearchTypeComboBox.setValue("Tất cả (Sách)");
         }
     }
 
-    private void displayRandomQuote() {
-        // Phương thức này nên nằm trong HomeViewController nếu quoteTextLabel và quoteAuthorLabel là của HomeView
-        // Giả sử chúng là của AdminDashboard (ít khả năng)
-        if (quoteTextLabel == null || quoteAuthorLabel == null) {
-            System.err.println("WARN_ADC_QUOTE: Quote labels are null. Cannot display quote.");
-            return;
+    private void populateTopBarAdminInfo() {
+        if (currentAdmin == null) return;
+        if (adminUsernameLabelTopBar != null) {
+            adminUsernameLabelTopBar.setText(currentAdmin.getFullNameOrDefault(currentAdmin.getUsernameOrDefault("Admin")));
         }
-        quotesList = List.of( /* ... danh sách quote của cậu ... */ );
-        if (!quotesList.isEmpty()) {
-            Random random = new Random();
-            Quote randomQuote = quotesList.get(random.nextInt(quotesList.size()));
-            quoteTextLabel.setText("\"" + randomQuote.getText() + "\"");
-            quoteAuthorLabel.setText("- " + randomQuote.getAuthor());
+        if (adminRoleLabelTopBar != null) {
+            adminRoleLabelTopBar.setText("Quyền: " + currentAdmin.getRole().toString());
+        }
+        loadAdminAvatarForTopBar();
+    }
+
+    public void refreshTopBarAdminInfo() {
+        System.out.println("DEBUG_ADC: Refreshing top bar admin info...");
+        this.currentAdmin = SessionManager.getInstance().getCurrentUser();
+        if (this.currentAdmin != null && this.currentAdmin.getRole() == User.Role.ADMIN) {
+            populateTopBarAdminInfo();
         } else {
-            // ...
+            System.err.println("ERROR_ADC_REFRESH_TOP_BAR: Current admin is null or not an admin after session refresh.");
         }
     }
 
-    private VBox createBookDisplay(Book book) {
-        // Giữ nguyên logic, đảm bảo Book model có đường dẫn đúng
-        VBox bookPane = new VBox(3);
-        bookPane.setPadding(new Insets(8));
-        bookPane.getStyleClass().add("book-item-pane");
-        bookPane.setAlignment(Pos.TOP_CENTER);
-        ImageView coverImage = new ImageView();
-        coverImage.setFitHeight(130); coverImage.setFitWidth(85);
-        coverImage.setPreserveRatio(true);
-        VBox.setMargin(coverImage, new Insets(0, 0, 5, 0));
-        loadBookCoverAsync(book.getThumbnailUrl(), coverImage);
-        Label titleLabel = new Label(book.getTitle() != null ? book.getTitle() : "N/A");
-        titleLabel.setWrapText(true); titleLabel.setMaxWidth(115); titleLabel.setMinHeight(28);
-        titleLabel.getStyleClass().add("book-item-title");
-        titleLabel.setTextAlignment(TextAlignment.CENTER);
-        Label authorsLabel = new Label((book.getAuthors() != null && !book.getAuthors().isEmpty()) ? String.join(", ", book.getAuthors()) : "N/A");
-        authorsLabel.setWrapText(true); authorsLabel.setMaxWidth(115); authorsLabel.setMinHeight(15);
-        authorsLabel.getStyleClass().add("book-item-author");
-        authorsLabel.setTextAlignment(TextAlignment.CENTER);
-        bookPane.getChildren().addAll(coverImage, titleLabel, authorsLabel);
-        return bookPane;
-    }
-
-    private void loadBookCoverAsync(String imageUrl, ImageView imageView) {
-        // Giữ nguyên logic, đảm bảo Image model có đường dẫn đúng
-        if (imageView == null) {
-            System.err.println("ERROR_ADC_LOAD_COVER: ImageView is null for URL: " + imageUrl);
-            return;
-        }
-        if (imageUrl != null && !imageUrl.isEmpty()) {
-            Task<Image> loadImageTask = new Task<>() {
-                @Override
-                protected Image call() throws Exception {
-                    String finalImageUrl = imageUrl;
-                    if (finalImageUrl.startsWith("//")) {
-                        finalImageUrl = "https:" + finalImageUrl;
-                    }
-                    return new Image(finalImageUrl, 85, 130, true, true, true);
-                }
-            };
-            loadImageTask.setOnSucceeded(event -> {
-                Image loadedImage = loadImageTask.getValue();
-                if (loadedImage != null && !loadedImage.isError()) {
-                    imageView.setImage(loadedImage);
+    private void loadAdminAvatarForTopBar() {
+        if (adminAvatarTopBar == null) return;
+        Image imageToSet = null; String avatarPath = (currentAdmin != null) ? currentAdmin.getAvatarUrl() : null;
+        if (avatarPath != null && !avatarPath.isEmpty()) {
+            try {
+                File avatarFile = new File(avatarPath);
+                if (avatarFile.exists() && avatarFile.isFile() && avatarFile.canRead()) {
+                    imageToSet = new Image(avatarFile.toURI().toString(), true);
                 } else {
-                    if (defaultBookCoverImage != null) imageView.setImage(defaultBookCoverImage);
-                    if (loadedImage != null && loadedImage.getException()!=null) System.err.println("ERROR_ADC_LOAD_COVER_TASK: Image loaded with error for " + imageUrl + " - " + loadedImage.getException().getMessage()); else System.err.println("ERROR_ADC_LOAD_COVER_TASK: Image loaded null or unspecified error for " + imageUrl);
+                    try { // Thử load như một URL nếu không phải file
+                        new URL(avatarPath).toURI();
+                        imageToSet = new Image(avatarPath, true);
+                    } catch (Exception urlEx) {
+                        System.err.println("WARN_ADC_AVATAR: Avatar path is not a valid file or URL: " + avatarPath);
+                    }
                 }
-            });
-            loadImageTask.setOnFailed(event -> {
-                if (defaultBookCoverImage != null) imageView.setImage(defaultBookCoverImage);
-                System.err.println("ERROR_ADC_LOAD_COVER_TASK: Task failed for " + imageUrl);
-                if(loadImageTask.getException()!=null) loadImageTask.getException().printStackTrace();
-            });
-            new Thread(loadImageTask).start();
-        } else {
-            if (defaultBookCoverImage != null) imageView.setImage(defaultBookCoverImage);
+                if (imageToSet != null && imageToSet.isError()) {
+                    System.err.println("ERROR_ADC_AVATAR: Error loading image from path: " + avatarPath + " - " + imageToSet.getException().getMessage());
+                    imageToSet = null;
+                }
+            } catch (Exception e) {
+                System.err.println("ERROR_ADC_AVATAR: Exception processing avatar path: " + avatarPath + " - " + e.getMessage());
+                imageToSet = null;
+            }
         }
+        if (imageToSet == null) {
+            try (InputStream defaultStream = getClass().getResourceAsStream("/com/lms/quanlythuvien/images/default_avatar.png")) {
+                if (defaultStream != null) {
+                    imageToSet = new Image(defaultStream);
+                } else {
+                    System.err.println("ERROR_ADC_AVATAR: Default admin avatar resource not found.");
+                }
+            } catch (Exception e) { System.err.println("ERROR_ADC_AVATAR: Failed to load default admin avatar: " + e.getMessage());}
+        }
+        adminAvatarTopBar.setImage(imageToSet);
     }
 
-    @FXML
-    private void handleSearchAction(ActionEvent event) {
-        // Giữ nguyên logic, đảm bảo Book model có đường dẫn đúng
-        String query = searchField.getText().trim();
-        if (query.isEmpty()) {
-            mainContentArea.getChildren().setAll(new Label("Vui lòng nhập từ khóa tìm kiếm."));
-            setActiveMenuButton(null);
+    public void loadAdminViewIntoCenter(String fxmlFilename) {
+        if (adminMainContentArea == null) {
+            System.err.println("ERROR_ADC_LOADVIEW: adminMainContentArea is null.");
             return;
         }
-        Label loadingLabel = new Label("Đang tìm kiếm sách, vui lòng đợi...");
-        loadingLabel.getStyleClass().add("view-title");
-        mainContentArea.getChildren().setAll(loadingLabel);
-        setActiveMenuButton(null);
-
-        Task<List<Book>> searchTask = new Task<>() {
-            @Override
-            protected List<Book> call() throws Exception {
-                return googleBooksService.searchBooks(query, 20);
-            }
-        };
-        searchTask.setOnSucceeded(e -> { /* ... giữ nguyên ... */
-            List<Book> searchResults = searchTask.getValue();
-            FlowPane resultsPane = new FlowPane(15, 15);
-            resultsPane.setPadding(new Insets(10));
-            resultsPane.setAlignment(Pos.TOP_LEFT);
-            if (searchResults == null || searchResults.isEmpty()) {
-                resultsPane.getChildren().add(new Label("Không tìm thấy sách nào cho từ khóa: '" + query + "'"));
-            } else {
-                for (Book book : searchResults) {
-                    resultsPane.getChildren().add(createBookDisplay(book));
-                }
-            }
-            ScrollPane scrollPane = new ScrollPane(resultsPane);
-            scrollPane.setFitToWidth(true);
-            scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
-            mainContentArea.getChildren().setAll(scrollPane);
-        });
-        searchTask.setOnFailed(e -> { /* ... giữ nguyên ... */
-            mainContentArea.getChildren().setAll(new Label("Lỗi trong quá trình tìm kiếm. Vui lòng thử lại."));
-            if (searchTask.getException() != null) searchTask.getException().printStackTrace();
-        });
-        new Thread(searchTask).start();
-    }
-
-    @FXML
-    private void handleHomeAction(ActionEvent event) {
-        loadHomeView();
-        setActiveMenuButton(homeButton);
-    }
-
-    // QUAN TRỌNG: Cập nhật đường dẫn FXML ở đây nếu cậu đã chia package FXML
-    @FXML
-    private void handleBookManagementAction(ActionEvent event) {
-        loadViewIntoMainContent("/com/lms/quanlythuvien/fxml/admin/BookManagementView.fxml");
-        setActiveMenuButton(bookManagementButton);
-    }
-
-    @FXML
-    private void handleUserManagementAction(ActionEvent event) {
-        loadViewIntoMainContent("/com/lms/quanlythuvien/fxml/admin/UserManagementView.fxml");
-        setActiveMenuButton(userManagementButton);
-    }
-
-    @FXML
-    private void handleLoanManagementAction(ActionEvent event) {
-        loadViewIntoMainContent("/com/lms/quanlythuvien/fxml/admin/LoanManagementView.fxml");
-        setActiveMenuButton(loanManagementButton);
-    }
-
-    private void loadViewIntoMainContent(String fxmlPath) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
-            Parent view = loader.load();
-            mainContentArea.getChildren().setAll(view);
+            String basePath = "/com/lms/quanlythuvien/fxml/";
+            // Kiểm tra xem fxmlFilename đã bao gồm prefix package (common/, user/, admin/) chưa
+            String fullFxmlPath;
+            if (fxmlFilename.startsWith("common/") || fxmlFilename.startsWith("user/") || fxmlFilename.startsWith("admin/")) {
+                fullFxmlPath = basePath + fxmlFilename;
+            } else {
+                // Nếu không, mặc định là view của admin
+                fullFxmlPath = basePath + "admin/" + fxmlFilename;
+            }
+
+            URL fxmlUrl = getClass().getResource(fullFxmlPath);
+            if (fxmlUrl == null) {
+                System.err.println("ERROR_ADC_LOADVIEW: FXML not found: " + fullFxmlPath);
+                adminMainContentArea.getChildren().setAll(new Label("Lỗi: Không tìm thấy " + fxmlFilename));
+                return;
+            }
+
+            FXMLLoader loader = new FXMLLoader(fxmlUrl);
+            Node view = loader.load();
+            adminMainContentArea.getChildren().setAll(view);
+            Object controller = loader.getController();
+
+            // Truyền dashboard controller cho các view con của admin
+            if (controller instanceof AdminHomeContentController) {
+                // AdminHomeContentController không cần tham chiếu ngược lại dashboard nếu nó không thực hiện điều hướng
+            } else if (controller instanceof AdminBookManagementController) {
+                ((AdminBookManagementController) controller).setDashboardController(this);
+            } else if (controller instanceof AdminAuthorManagementController) {
+                ((AdminAuthorManagementController) controller).setDashboardController(this);
+            } else if (controller instanceof AdminUserManagementController) {
+                ((AdminUserManagementController) controller).setDashboardController(this);
+            } else if (controller instanceof AdminLoanManagementController) {
+                ((AdminLoanManagementController) controller).setDashboardController(this);
+            } else if (controller instanceof AdminProfileController) {
+                ((AdminProfileController) controller).setDashboardController(this);
+            } else if (controller instanceof AdminDonationManagementController) {
+                ((AdminDonationManagementController) controller).setDashboardController(this);
+            } else if (controller instanceof AdminFAQManagementController) {
+                ((AdminFAQManagementController) controller).setDashboardController(this);
+            }
+            // --- THÊM XỬ LÝ CHO AUTHOR DETAIL CONTROLLER ---
+            else if (controller instanceof AuthorDetailController) {
+                // Khi Admin mở AuthorDetailView (là view của user nhưng admin có thể xem)
+                ((AuthorDetailController) controller).setAdminDashboardController(this);
+                // Đặt cờ trong SessionManager để AuthorDetailController biết admin đang xem
+                SessionManager.getInstance().setAdminViewingAuthorDetail(true);
+            }
+            // --- KẾT THÚC THÊM ---
+            // (Tương tự, nếu admin có thể xem BookDetailView của user)
+            else if (controller instanceof BookDetailController) {
+                // ((BookDetailController) controller).setAdminDashboardController(this); // Nếu BookDetailController cũng cần logic tương tự
+                SessionManager.getInstance().setAdminViewingBookDetail(true);
+            }
+
+
+            System.out.println("DEBUG_ADC_LOADVIEW: Successfully loaded " + fullFxmlPath + " into adminMainContentArea.");
         } catch (IOException e) {
-            System.err.println("ERROR_ADC_LOAD_VIEW: Error loading view: " + fxmlPath);
+            System.err.println("ERROR_ADC_LOADVIEW_IO: Failed to load FXML: " + fxmlFilename + ". Message: " + e.getMessage());
             e.printStackTrace();
-            mainContentArea.getChildren().setAll(new Label("Lỗi tải giao diện: " + fxmlPath.substring(fxmlPath.lastIndexOf("/") + 1) + "\nChi tiết: " + e.getMessage()));
-        } catch (NullPointerException e) { // Bắt lỗi nếu getResource trả về null
-            System.err.println("ERROR_ADC_LOAD_VIEW: Cannot find FXML file at path: " + fxmlPath);
+            adminMainContentArea.getChildren().setAll(new Label("Lỗi I/O khi tải: " + fxmlFilename));
+        } catch (Exception e) {
+            System.err.println("CRITICAL_ADC_LOADVIEW: Unexpected error loading FXML: " + fxmlFilename + ". Message: " + e.getMessage());
             e.printStackTrace();
-            mainContentArea.getChildren().setAll(new Label("Lỗi: Không tìm thấy file giao diện tại đường dẫn "  + fxmlPath));
+            adminMainContentArea.getChildren().setAll(new Label("Lỗi không mong muốn khi tải: " + fxmlFilename));
         }
     }
 
-    private void setActiveMenuButton(Button activeButton) {
-        Button[] menuButtons = {homeButton, bookManagementButton, userManagementButton, loanManagementButton};
-        for (Button btn : menuButtons) {
-            if (btn != null) {
-                btn.pseudoClassStateChanged(javafx.css.PseudoClass.getPseudoClass("active"), btn == activeButton);
+    private void setActiveSidebarButton(Button activeButton) {
+        // Xóa trạng thái active của nút cũ (nếu có và khác nút mới)
+        if (currentActiveSidebarButton != null && currentActiveSidebarButton != activeButton) {
+            currentActiveSidebarButton.pseudoClassStateChanged(javafx.css.PseudoClass.getPseudoClass("active"), false);
+        }
+        // Đặt trạng thái active cho nút mới (nếu có và thuộc danh sách sidebar)
+        if (activeButton != null && sidebarButtons.contains(activeButton)) {
+            activeButton.pseudoClassStateChanged(javafx.css.PseudoClass.getPseudoClass("active"), true);
+            currentActiveSidebarButton = activeButton;
+        } else {
+            // Nếu không có nút nào được active (ví dụ: xem profile không thuộc sidebar)
+            // hoặc nút không thuộc sidebar, thì xóa active của nút hiện tại (nếu có)
+            if (currentActiveSidebarButton != null && activeButton == null) { // Chỉ xóa nếu activeButton là null
+                currentActiveSidebarButton.pseudoClassStateChanged(javafx.css.PseudoClass.getPseudoClass("active"), false);
             }
+            currentActiveSidebarButton = null; // Đặt lại currentActiveSidebarButton
         }
     }
 
     @FXML
-    private void handleUserInfoAreaClick(MouseEvent event) {
-        if (event.getButton() == MouseButton.PRIMARY) {
-            ContextMenu userMenu = new ContextMenu();
-            MenuItem profileItem = new MenuItem("Xem Hồ Sơ");
-            profileItem.setOnAction(e -> System.out.println("Xem Hồ Sơ clicked (Not implemented)"));
-            MenuItem settingsItem = new MenuItem("Cài Đặt");
-            settingsItem.setOnAction(e -> System.out.println("Cài Đặt clicked (Not implemented)"));
-            MenuItem logoutItem = new MenuItem("Đăng xuất");
-            logoutItem.setOnAction(e -> {
-                if (clockTimeline != null) {
-                    clockTimeline.stop();
-                }
-                SessionManager.getInstance().clearSession();
-                MainApp.loadScene("/com/lms/quanlythuvien/fxml/common/LoginScreen.fxml"); // Đường dẫn mới
-            });
-            userMenu.getItems().addAll(profileItem, settingsItem, new javafx.scene.control.SeparatorMenuItem(), logoutItem);
-            userMenu.show(userInfoArea, event.getScreenX() - event.getX() + userInfoArea.getWidth() - 150 , event.getScreenY() - event.getY() + userInfoArea.getHeight() + 5); // Điều chỉnh vị trí menu
+    private void handleAdminGlobalSearch(ActionEvent event) {
+        String query = (adminGlobalSearchField != null) ? adminGlobalSearchField.getText().trim() : "";
+        String type = (adminGlobalSearchTypeComboBox != null && adminGlobalSearchTypeComboBox.getValue() != null) ?
+                adminGlobalSearchTypeComboBox.getValue() : "Tất cả (Sách)"; // Mặc định tìm sách
+        if (query.isEmpty() && !"Tất cả (Sách)".equals(type)) { // "Tất cả (Sách)" có thể không cần query
+            showAlert(Alert.AlertType.INFORMATION, "Thiếu thông tin", "Vui lòng nhập từ khóa tìm kiếm.");
+            return;
         }
+        System.out.println("ADMIN GLOBAL SEARCH: Query='" + query + "', Type='" + type + "'");
+        SessionManager.getInstance().setGlobalSearchQuery(query);
+        SessionManager.getInstance().setGlobalSearchType(type);
+
+        // Điều hướng đến view tương ứng và đặt active button
+        switch (type) {
+            case "Sách (Tiêu đề/ISBN)":
+            case "Tất cả (Sách)": // "Tất cả (Sách)" cũng mở BookManagementView, có thể filter hoặc không
+                loadAdminViewIntoCenter("BookManagementView.fxml");
+                setActiveSidebarButton(navAdminBookManagementButton);
+                break;
+            case "Tác giả":
+                loadAdminViewIntoCenter("AdminAuthorManagementView.fxml");
+                setActiveSidebarButton(navAdminAuthorManagementButton);
+                break;
+            case "Người dùng (Username/Email)":
+                loadAdminViewIntoCenter("UserManagementView.fxml");
+                setActiveSidebarButton(navAdminUserManagementButton);
+                break;
+            default: // Mặc định trở về quản lý sách
+                loadAdminViewIntoCenter("BookManagementView.fxml");
+                setActiveSidebarButton(navAdminBookManagementButton);
+                break;
+        }
+    }
+
+    @FXML private void handleAdminNavProfile(ActionEvent event) {
+        loadAdminViewIntoCenter("AdminProfileView.fxml");
+        setActiveSidebarButton(null); // Profile không phải là mục trên sidebar chính
+    }
+    @FXML private void handleAdminNavSettings(ActionEvent event) {
+        // loadAdminViewIntoCenter("AdminSettingsView.fxml"); // Khi có view cài đặt
+        setActiveSidebarButton(null);
+        showAlert(Alert.AlertType.INFORMATION, "Thông báo", "Chức năng Cài đặt Hệ thống sẽ được phát triển sau.");
+    }
+    @FXML private void handleAdminLogoutAction(ActionEvent event) {
+        SessionManager.getInstance().clearSession();
+        MainApp.loadScene("common/LoginScreen.fxml");
+    }
+
+    @FXML private void handleAdminNavHome(ActionEvent event) {
+        loadAdminViewIntoCenter("AdminHomeContentView.fxml");
+        setActiveSidebarButton(navAdminHomeButton);
+    }
+    @FXML private void handleAdminNavNotifications(ActionEvent event) {
+        loadAdminViewIntoCenter("AdminNotificationsView.fxml");
+        setActiveSidebarButton(navAdminNotificationsButton);
+    }
+    @FXML private void handleAdminNavBookManagement(ActionEvent event) {
+        SessionManager.getInstance().setGlobalSearchQuery(null); // Xóa query cũ khi vào trực tiếp
+        SessionManager.getInstance().setGlobalSearchType(null);
+        loadAdminViewIntoCenter("BookManagementView.fxml");
+        setActiveSidebarButton(navAdminBookManagementButton);
+    }
+    @FXML private void handleAdminNavAuthorManagement(ActionEvent event) {
+        SessionManager.getInstance().setGlobalSearchQuery(null);
+        SessionManager.getInstance().setGlobalSearchType(null);
+        loadAdminViewIntoCenter("AdminAuthorManagementView.fxml");
+        setActiveSidebarButton(navAdminAuthorManagementButton);
+    }
+    @FXML private void handleAdminNavUserManagement(ActionEvent event) {
+        SessionManager.getInstance().setGlobalSearchQuery(null);
+        SessionManager.getInstance().setGlobalSearchType(null);
+        loadAdminViewIntoCenter("UserManagementView.fxml");
+        setActiveSidebarButton(navAdminUserManagementButton);
+    }
+    @FXML private void handleAdminNavLoanManagement(ActionEvent event) {
+        loadAdminViewIntoCenter("LoanManagementView.fxml");
+        setActiveSidebarButton(navAdminLoanManagementButton);
+    }
+    @FXML private void handleAdminNavDonationManagement(ActionEvent event) {
+        loadAdminViewIntoCenter("AdminDonationManagementView.fxml");
+        setActiveSidebarButton(navAdminDonationManagementButton);
+    }
+    @FXML private void handleAdminNavFAQManagement(ActionEvent event) {
+        loadAdminViewIntoCenter("AdminFAQManagementView.fxml");
+        setActiveSidebarButton(navAdminFAQManagementButton);
+    }
+
+    private void showAlert(Alert.AlertType alertType, String title, String message) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        applyDialogStyles(alert.getDialogPane());
+        alert.showAndWait();
+    }
+
+    private void applyDialogStyles(DialogPane dialogPane) {
+        try {
+            URL cssUrl = getClass().getResource("/com/lms/quanlythuvien/css/styles.css");
+            if (cssUrl != null) {
+                dialogPane.getStylesheets().add(cssUrl.toExternalForm());
+            }
+        } catch (Exception e) { System.err.println("WARN_DIALOG_CSS: Failed to load CSS for AdminDashboard dialogs: " + e.getMessage()); }
     }
 }
