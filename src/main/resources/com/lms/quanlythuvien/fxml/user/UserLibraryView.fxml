@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.TilePane?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane styleClass="subview-container" stylesheets="@/com/lms/quanlythuvien/css/styles.css" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.user.UserLibraryController">
+    <top>
+        <VBox alignment="CENTER_LEFT" styleClass="view-header-pane">
+            <padding>
+                <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
+            </padding>
+            <Label text="Thư Viện Sách và Tác Giả" styleClass="view-title" />
+            <Label text="Khám phá kho tàng tri thức và những người tạo nên chúng." styleClass="view-subtitle"/>
+        </VBox>
+    </top>
+
+    <center>
+        <TabPane fx:id="libraryTabPane" tabClosingPolicy="UNAVAILABLE" styleClass="library-tabpane" BorderPane.alignment="CENTER">
+            <tabs>
+                <Tab fx:id="booksLibraryTab" text="Khám Phá Sách">
+                    <content>
+                        <BorderPane>
+                            <top>
+                                <VBox spacing="10.0" styleClass="filter-section-container"> <padding>
+                                    <Insets top="15.0" right="20.0" bottom="10.0" left="20.0" />
+                                </padding>
+                                    <children>
+                                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="filter-bar-controls">
+                                            <Label text="Thể loại:" styleClass="filter-label"/>
+                                            <ComboBox fx:id="genreFilterComboBox" prefWidth="220.0" promptText="-- Tất cả thể loại --" styleClass="combo-box-filter"/>
+                                        </HBox>
+                                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="filter-bar-controls">
+                                            <Label text="Tìm kiếm trong Sách:" styleClass="filter-label"/>
+                                            <TextField fx:id="bookTabSearchField" promptText="Nhập tên sách, ISBN, tác giả..." HBox.hgrow="ALWAYS" styleClass="form-input-tab-search"/>
+                                            <Button fx:id="applyBookTabFilterButton" text="Tìm" styleClass="primary-button-small" onAction="#handleApplyBookTabFilter"/>
+                                            <Button fx:id="clearBookTabFilterButton" text="Xóa Lọc" styleClass="secondary-button-small" onAction="#handleClearBookTabFilter"/>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+                            </top>
+                            <center>
+                                <ScrollPane fx:id="booksScrollPane" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="tab-content-scrollpane">
+                                    <content>
+                                        <TilePane fx:id="booksTilePane" hgap="20.0" vgap="20.0" styleClass="book-tile-pane" prefColumns="0">
+                                            <padding>
+                                                <Insets bottom="20.0" left="20.0" right="20.0" top="15.0" />
+                                            </padding>
+                                        </TilePane>
+                                    </content>
+                                </ScrollPane>
+                            </center>
+                        </BorderPane>
+                    </content>
+                </Tab>
+
+                <Tab fx:id="authorsLibraryTab" text="Khám Phá Tác Giả">
+                    <content>
+                        <BorderPane>
+                            <top>
+                                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="filter-bar-controls">
+                                    <padding>
+                                        <Insets top="15.0" right="20.0" bottom="10.0" left="20.0" />
+                                    </padding>
+                                    <Label text="Tìm tên tác giả:" styleClass="filter-label"/>
+                                    <TextField fx:id="authorTabSearchField" promptText="Nhập tên tác giả..." HBox.hgrow="ALWAYS" styleClass="form-input-tab-search"/>
+                                    <Button fx:id="applyAuthorTabSearchButton" text="Tìm" styleClass="primary-button-small" onAction="#handleApplyAuthorTabSearch"/>
+                                    <Button fx:id="clearAuthorTabSearchButton" text="Xóa tìm" styleClass="secondary-button-small" onAction="#handleClearAuthorTabSearch"/>
+                                </HBox>
+                            </top>
+                            <center>
+                                <ScrollPane fx:id="authorsScrollPane" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="tab-content-scrollpane">
+                                    <content>
+                                        <TilePane fx:id="authorsTilePane" hgap="20.0" vgap="20.0" styleClass="author-tile-pane" prefColumns="0">
+                                            <padding>
+                                                <Insets bottom="20.0" left="20.0" right="20.0" top="15.0" />
+                                            </padding>
+                                        </TilePane>
+                                    </content>
+                                </ScrollPane>
+                            </center>
+                        </BorderPane>
+                    </content>
+                </Tab>
+            </tabs>
+        </TabPane>
+    </center>
+</BorderPane>

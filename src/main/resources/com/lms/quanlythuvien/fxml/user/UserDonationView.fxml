@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Text?>
+<?import javafx.scene.text.TextFlow?>
+
+<BorderPane styleClass="subview-container-white" stylesheets="@/com/lms/quanlythuvien/css/styles.css" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.user.UserDonationController">
+    <top>
+        <VBox alignment="CENTER_LEFT" styleClass="view-header-pane">
+            <padding>
+                <Insets bottom="15.0" left="0" right="0" top="0" />
+            </padding>
+            <Label text="Quyên Góp Sách" styleClass="view-title" />
+            <Label text="Chung tay xây dựng thư viện tri thức phong phú hơn!" styleClass="view-subtitle"/>
+        </VBox>
+    </top>
+
+    <center>
+        <HBox spacing="30.0" style="-fx-background-color: #f4f6f8;"> <padding>
+            <Insets top="20.0" right="30.0" bottom="20.0" left="30.0" />
+        </padding>
+            <children>
+                <VBox spacing="15.0" HBox.hgrow="ALWAYS" styleClass="content-card" prefWidth="450.0" maxWidth="500.0">
+                    <padding>
+                        <Insets top="20.0" right="25.0" bottom="25.0" left="25.0" />
+                    </padding>
+                    <Label text="Điền Thông Tin Sách Quyên Góp" styleClass="form-title-large"/>
+
+                    <Label text="Tên sách (*):" styleClass="form-label"/>
+                    <TextField fx:id="bookNameField" promptText="Nhập tên đầy đủ của sách" styleClass="form-input"/>
+
+                    <Label text="Tên tác giả (*):" styleClass="form-label"/>
+                    <TextField fx:id="authorNameField" promptText="Nhập tên tác giả (hoặc nhiều tác giả, cách nhau bởi dấu phẩy)" styleClass="form-input"/>
+
+                    <Label text="Thể loại (*):" styleClass="form-label"/>
+                    <ComboBox fx:id="categoryComboBox" promptText="-- Chọn thể loại --" maxWidth="Infinity" styleClass="form-input"/>
+
+                    <Label text="Ngôn ngữ:" styleClass="form-label"/>
+                    <ComboBox fx:id="languageComboBox" promptText="-- Chọn ngôn ngữ --" maxWidth="Infinity" styleClass="form-input"/>
+
+                    <Label text="Lý do bạn muốn đóng góp cuốn sách này:" styleClass="form-label"/>
+                    <TextArea fx:id="reasonTextArea" promptText="Chia sẻ thêm về cuốn sách hoặc lý do của bạn..." prefRowCount="4" wrapText="true" styleClass="form-input"/>
+
+                    <Label fx:id="donationFormErrorLabel" styleClass="error-label" managed="false" visible="false"/>
+
+                    <Button fx:id="submitDonationButton" text="Gửi Đăng Ký Quyên Góp" onAction="#handleSubmitDonationAction" styleClass="primary-button" maxWidth="Infinity"/>
+                </VBox>
+
+                <VBox spacing="20.0" HBox.hgrow="ALWAYS" alignment="TOP_CENTER">
+                    <VBox alignment="CENTER" spacing="5.0" styleClass="content-card-highlight"> <padding><Insets top="30.0" right="20.0" bottom="30.0" left="20.0" /></padding>
+                        <TextFlow textAlignment="CENTER">
+                            <Text text="Sự " styleClass="highlight-message-normal"/>
+                            <Text text="Đóng Góp " styleClass="highlight-message-accent"/>
+                            <Text text="của bạn" styleClass="highlight-message-normal"/>
+                        </TextFlow>
+                        <TextFlow textAlignment="CENTER">
+                            <Text text="Lan Tỏa Tri Thức!" styleClass="highlight-message-normal-large"/>
+                        </TextFlow>
+                        <Label text="Mỗi cuốn sách bạn chia sẻ là một hạt giống tri thức cho cộng đồng." styleClass="label-regular" textAlignment="CENTER" wrapText="true" maxWidth="350"/>
+                    </VBox>
+
+                    <VBox spacing="10.0" styleClass="content-card" VBox.vgrow="ALWAYS"> <padding><Insets top="15.0" right="15.0" bottom="15.0" left="15.0" /></padding>
+                        <Label text="Lịch Sử Đăng Ký Quyên Góp Của Bạn" styleClass="view-title-user-section"/>
+                        <ListView fx:id="donationHistoryListView" VBox.vgrow="ALWAYS">
+                            <placeholder>
+                                <Label text="Bạn chưa có đăng ký quyên góp nào."/>
+                            </placeholder>
+                        </ListView>
+                    </VBox>
+                </VBox>
+            </children>
+        </HBox>
+    </center>
+</BorderPane>

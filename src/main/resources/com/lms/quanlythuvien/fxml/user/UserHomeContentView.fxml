@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.user.UserHomeContentController">
+    <top>
+        <VBox alignment="CENTER_LEFT" styleClass="view-header-pane">
+            <padding>
+                <Insets bottom="15.0" left="0" right="0" top="0" />
+            </padding>
+            <Label text="Trang Chủ" styleClass="view-title" />
+            <Label text="Tổng quan thông tin cá nhân và hoạt động mượn sách của bạn." styleClass="view-subtitle"/>
+        </VBox>
+    </top>
+
+    <center>
+        <ScrollPane fx:id="userHomeContentScrollPane" fitToHeight="true" fitToWidth="true"
+                    style="-fx-background-color: transparent; -fx-background: transparent;"
+                    hbarPolicy="NEVER" vbarPolicy="AS_NEEDED">
+            <content>
+                <VBox fx:id="dashboardMainContentContainer" spacing="25.0" alignment="TOP_CENTER"
+                      style="-fx-background-color: #ffffff;">
+                    <padding>
+                        <Insets bottom="30.0" left="0" right="0" top="20.0" />
+                    </padding>
+
+                    <HBox spacing="25.0" alignment="TOP_LEFT">
+                        <VBox.margin>
+                            <Insets left="20.0" right="20.0" />
+                        </VBox.margin>
+                        <children>
+                            <VBox fx:id="profileInfoSection" spacing="10.0" HBox.hgrow="ALWAYS" styleClass="content-card">
+                                <Label text="THÔNG TIN CÁ NHÂN" styleClass="view-title-user-section" />
+                                <HBox alignment="CENTER_LEFT" spacing="20.0">
+                                    <ImageView fx:id="avatarImageView" fitHeight="80.0" fitWidth="80.0" pickOnBounds="true" preserveRatio="true" styleClass="avatar-image-dashboard" />
+                                    <VBox spacing="5.0">
+                                        <Label fx:id="greetingLabel" styleClass="greeting-label-dashboard" text="Xin chào," />
+                                        <Label fx:id="userNameLabel" styleClass="username-label-dashboard-large" text="Tên Người Dùng" />
+                                        <Label fx:id="userEmailLabel" styleClass="email-label-dashboard" text="Email: email@example.com" />
+                                        <Label fx:id="userPhoneLabel" styleClass="info-text-small" text="SĐT: Chưa cập nhật" />
+                                        <Label fx:id="userDobLabel" styleClass="info-text-small" text="Năm sinh: Chưa cập nhật" />
+                                    </VBox>
+                                </HBox>
+                                <HBox alignment="CENTER_LEFT" spacing="10.0" style="-fx-padding: 10 0 0 0;">
+                                    <Label text="Sách đang mượn:" styleClass="label-bold" />
+                                    <Label fx:id="currentLoansCountLabel" styleClass="info-text-prominent-large" />
+                                </HBox>
+                            </VBox>
+
+                            <VBox fx:id="quoteCardUser" alignment="CENTER" spacing="8.0" styleClass="content-card" HBox.hgrow="NEVER" minWidth="320.0" prefWidth="320.0">
+                                <Label text="Trích Dẫn Mỗi Ngày" styleClass="home-quote-card-title" />
+                                <Label fx:id="quoteTextLabel" alignment="CENTER" textAlignment="CENTER" wrapText="true" styleClass="home-quote-card-text-user" />
+                                <Label fx:id="quoteAuthorLabel" alignment="CENTER" styleClass="home-quote-card-author-user" />
+                            </VBox>
+                        </children>
+                    </HBox>
+
+                    <VBox spacing="10.0" styleClass="content-card">
+                        <VBox.margin><Insets left="20.0" right="20.0" /></VBox.margin>
+                        <Label text="HOẠT ĐỘNG MƯỢN SÁCH (14 NGÀY GẦN NHẤT)" styleClass="view-title-user-section" />
+                        <Label fx:id="loanHistoryChartPlaceholder" text="Chưa có dữ liệu hoạt động mượn sách."
+                               styleClass="placeholder-text" managed="false" visible="false"/>
+                        <BarChart fx:id="loanHistoryLast14DaysChart" prefHeight="300.0" legendVisible="false" styleClass="custom-barchart-user" barGap="4.0" categoryGap="8.0">
+                            <yAxis>
+                                <CategoryAxis side="LEFT" fx:id="dateAxis14Days" label="Ngày" />
+                            </yAxis>
+                            <xAxis>
+                                <NumberAxis side="BOTTOM" fx:id="loanCountAxis14Days" label="Số lượt mượn" tickUnit="1.0" minorTickCount="0" />
+                            </xAxis>
+                        </BarChart>
+                    </VBox>
+
+                    <VBox spacing="10.0" styleClass="content-card">
+                        <VBox.margin><Insets left="20.0" right="20.0" /></VBox.margin>
+                        <Label text="THỂ LOẠI SÁCH BẠN HAY MƯỢN" styleClass="view-title-user-section" />
+                        <Label fx:id="loanedGenresChartPlaceholder" text="Chưa có dữ liệu về thể loại sách đã mượn."
+                               styleClass="placeholder-text" managed="false" visible="false"/>
+                        <BarChart fx:id="loanedGenresChart" prefHeight="350.0" legendVisible="false" styleClass="custom-barchart-user" barGap="4.0" categoryGap="8.0">
+                            <yAxis>
+                                <CategoryAxis side="LEFT" fx:id="genreCategoryAxis" label="Thể loại" />
+                            </yAxis>
+                            <xAxis>
+                                <NumberAxis side="BOTTOM" fx:id="genreLoanCountAxis" label="Số lượt mượn" tickUnit="1.0" minorTickCount="0" />
+                            </xAxis>
+                        </BarChart>
+                    </VBox>
+
+                    <VBox spacing="10.0" styleClass="content-card">
+                        <VBox.margin><Insets left="20.0" right="20.0" /></VBox.margin>
+                        <Label text="SÁCH SẮP ĐẾN HẠN (TRONG 5 NGÀY TỚI)" styleClass="view-title-user-section" />
+                        <ListView fx:id="dueSoonListView" prefHeight="280.0" styleClass="due-soon-listview-user">
+                            <placeholder> <Label text="Không có sách nào sắp đến hạn trong 5 ngày tới." styleClass="placeholder-text"/>
+                            </placeholder>
+                        </ListView>
+                    </VBox>
+                </VBox>
+            </content>
+        </ScrollPane>
+    </center>
+</BorderPane>

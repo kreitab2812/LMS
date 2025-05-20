@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.TilePane?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane styleClass="subview-container" stylesheets="@/com/lms/quanlythuvien/css/styles.css" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.user.MyBookshelfController">
+    <top>
+        <VBox alignment="CENTER_LEFT" styleClass="view-header-pane">
+            <padding>
+                <Insets bottom="15.0" left="0" right="0" top="0" />
+            </padding>
+            <Label text="Tủ Sách Của Tôi" styleClass="view-title" />
+            <Label text="Theo dõi sách đang mượn, lịch sử đọc, yêu cầu và những cuốn sách bạn yêu thích." styleClass="view-subtitle"/>
+        </VBox>
+    </top>
+
+    <center>
+        <TabPane fx:id="myBookshelfTabPane" tabClosingPolicy="UNAVAILABLE" styleClass="my-bookshelf-tabpane" BorderPane.alignment="CENTER">
+            <tabs>
+                <Tab fx:id="borrowedBooksTab" text="Sách Đang Mượn">
+                    <content>
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="tab-content-scrollpane">
+                            <content>
+                                <TilePane fx:id="borrowedBooksTilePane" hgap="20" vgap="20" styleClass="book-tile-pane" prefColumns="0">
+                                    <padding>
+                                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+                                    </padding>
+                                </TilePane>
+                            </content>
+                        </ScrollPane>
+                    </content>
+                </Tab>
+
+                <Tab fx:id="readingHistoryTab" text="Lịch Sử Đọc">
+                    <content>
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="tab-content-scrollpane">
+                            <content>
+                                <TilePane fx:id="readingHistoryTilePane" hgap="20" vgap="20" styleClass="book-tile-pane" prefColumns="0">
+                                    <padding>
+                                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+                                    </padding>
+                                </TilePane>
+                            </content>
+                        </ScrollPane>
+                    </content>
+                </Tab>
+
+                <Tab fx:id="loanRequestsTab" text="Yêu Cầu Mượn">
+                    <content>
+                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="tab-content-scrollpane">
+                            <content>
+                                <TilePane fx:id="loanRequestsTilePane" hgap="20" vgap="20" styleClass="book-tile-pane" prefColumns="0">
+                                    <padding>
+                                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+                                    </padding>
+                                </TilePane>
+                            </content>
+                        </ScrollPane>
+                    </content>
+                </Tab>
+
+                <Tab fx:id="favouriteBooksTab" text="Sách Yêu Thích">
+                    <content>
+                        <VBox alignment="CENTER" style="-fx-padding: 20px;">
+                            <Label text="Tính năng 'Sách Yêu Thích' sẽ sớm được cập nhật!" styleClass="placeholder-text-large"/>
+                        </VBox>
+                    </content>
+                </Tab>
+            </tabs>
+        </TabPane>
+    </center>
+</BorderPane>

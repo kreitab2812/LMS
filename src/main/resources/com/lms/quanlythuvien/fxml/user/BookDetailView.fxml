@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane fx:id="bookDetailRoot" prefWidth="500.0" styleClass="root-details" stylesheets="@../../css/styles.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.user.BookDetailController">
+    <padding>
+        <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+    </padding>
+    <center>
+        <ScrollPane fitToWidth="true" style="-fx-background-color: transparent; -fx-background: transparent;">
+            <content>
+                <VBox spacing="12.0">
+                    <children>
+                        <Label fx:id="detailTitleLabel" styleClass="view-title" wrapText="true">
+                            <font><Font name="Arial Bold" size="20.0" /></font>
+                        </Label>
+                        <HBox spacing="20.0" alignment="TOP_LEFT">
+                            <children>
+                                <ImageView fx:id="detailCoverImageView" fitHeight="200.0" pickOnBounds="true" preserveRatio="true" styleClass="book-cover-detail" />
+                                <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <HBox spacing="5.0">
+                                            <children>
+                                                <Label text="Tác giả:" styleClass="detail-field-label" />
+                                                <Label fx:id="detailAuthorsLabel" styleClass="detail-field-value" wrapText="true" />
+                                            </children>
+                                        </HBox>
+                                        <HBox spacing="5.0">
+                                            <children>
+                                                <Label text="Nhà xuất bản:" styleClass="detail-field-label" />
+                                                <Label fx:id="detailPublisherLabel" styleClass="detail-field-value" wrapText="true" />
+                                            </children>
+                                        </HBox>
+                                        <HBox spacing="5.0">
+                                            <children>
+                                                <Label text="Năm XB:" styleClass="detail-field-label" />
+                                                <Label fx:id="detailPublishedDateLabel" styleClass="detail-field-value" />
+                                            </children>
+                                        </HBox>
+                                        <HBox spacing="5.0">
+                                            <children>
+                                                <Label text="ISBN:" styleClass="detail-field-label" />
+                                                <Label fx:id="detailIsbnLabel" styleClass="detail-field-value" />
+                                            </children>
+                                        </HBox>
+                                        <HBox spacing="5.0">
+                                            <children>
+                                                <Label text="Số trang:" styleClass="detail-field-label" />
+                                                <Label fx:id="detailPageCountLabel" styleClass="detail-field-value" />
+                                            </children>
+                                        </HBox>
+                                        <HBox spacing="5.0">
+                                            <children>
+                                                <Label text="Thể loại:" styleClass="detail-field-label" />
+                                                <Label fx:id="detailCategoriesLabel" styleClass="detail-field-value" wrapText="true" />
+                                            </children>
+                                        </HBox>
+                                        <HBox spacing="5.0" alignment="CENTER_LEFT">
+                                            <children>
+                                                <Label text="Hiện có:" styleClass="detail-field-label-bold" />
+                                                <Label fx:id="detailAvailableQuantityLabel" styleClass="detail-field-value-highlight" />
+                                            </children>
+                                            <VBox.margin>
+                                                <Insets top="5.0" />
+                                            </VBox.margin>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+                        <Label text="Mô tả:" styleClass="detail-section-title">
+                            <VBox.margin>
+                                <Insets top="10.0" />
+                            </VBox.margin>
+                        </Label>
+                        <TextArea fx:id="detailDescriptionArea" editable="false" wrapText="true" prefRowCount="6" styleClass="form-input" />
+
+                    </children>
+                    <padding>
+                        <Insets top="5.0" bottom="5.0" left="5.0" right="5.0" />
+                    </padding>
+                </VBox>
+            </content>
+        </ScrollPane>
+    </center>
+    <bottom>
+        <HBox alignment="CENTER_RIGHT" prefHeight="50.0" spacing="10" style="-fx-padding: 10;">
+            <children>
+                <Button fx:id="requestBorrowButton" onAction="#handleRequestBorrowAction" text="Gửi Yêu Cầu Mượn Sách" styleClass="primary-button" disable="true"/>
+                <Button fx:id="closeDetailButton" onAction="#handleCloseDetailAction" text="Đóng" styleClass="secondary-button" />
+            </children>
+        </HBox>
+    </bottom>
+</BorderPane>

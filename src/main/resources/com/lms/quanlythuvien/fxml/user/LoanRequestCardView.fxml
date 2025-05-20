@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox fx:id="requestCardRoot" spacing="10.0" styleClass="request-card" prefWidth="300.0" minWidth="280.0" alignment="TOP_LEFT" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lms.quanlythuvien.controllers.user.LoanRequestCardController">
+    <padding>
+        <Insets bottom="12.0" left="12.0" right="12.0" top="12.0" />
+    </padding>
+    <children>
+        <HBox spacing="12.0" alignment="TOP_LEFT">
+            <ImageView fx:id="bookCoverImageView" fitHeight="100.0" fitWidth="70.0" pickOnBounds="true" preserveRatio="true" styleClass="book-card-cover-image"/>
+            <VBox spacing="5.0" HBox.hgrow="ALWAYS" alignment="TOP_LEFT">
+                <Label fx:id="bookTitleLabel" styleClass="book-card-title" wrapText="true" text="Tên Sách Được Yêu Cầu"/>
+                <Label fx:id="authorsLabel" styleClass="book-card-author" wrapText="true" text="Tên Tác Giả"/>
+                <Region VBox.vgrow="ALWAYS"/>
+                <Label fx:id="requestStatusLabel" styleClass="request-card-status" text="TRẠNG THÁI YÊU CẦU"/>
+            </VBox>
+        </HBox>
+
+        <VBox spacing="6.0" styleClass="request-card-info-section">
+            <padding>
+                <Insets top="8.0" />
+            </padding>
+            <Label fx:id="requestDateLabel" styleClass="book-card-date-info" text="Ngày yêu cầu: dd/MM/yyyy"/>
+            <Label fx:id="pickupDueDateLabel" styleClass="book-card-date-info-pickup" text="Hạn lấy sách: dd/MM/yyyy" visible="false" managed="false"/>
+            <Label fx:id="adminNotesLabel" styleClass="request-card-notes" text="Ghi chú Admin: ..." wrapText="true" visible="false" managed="false"/>
+        </VBox>
+
+        <Button fx:id="cancelRequestButton" text="Hủy Yêu Cầu" onAction="#handleCancelRequest" maxWidth="Infinity" styleClass="danger-button-small" visible="false" managed="false"/>
+    </children>
+</VBox>

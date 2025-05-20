@@ -94,10 +94,24 @@
 
 /* Label lỗi */
 .error-label {
-    -fx-text-fill: #D8000C; /* Màu đỏ đậm hơn cho lỗi */
+    -fx-text-fill: #D8000C !important; /* Màu đỏ cho lỗi - ĐÃ THÊM !important */
     -fx-font-size: 12.5px;
     -fx-font-family: "Arial", sans-serif;
-    -fx-padding: 5px 0; /* Thêm chút padding cho dễ nhìn */
+    -fx-font-weight: bold; /* In đậm */
+    -fx-padding: 5px 0;
+}
+
+/*Label đúng */
+.success-message {
+    -fx-text-fill: #008000; /* Màu xanh lá cây */
+    -fx-font-size: 12.5px;
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-weight: bold;
+    -fx-padding: 5px 0;
+}
+
+.success-title { /* Class tùy chọn để làm chữ "Thành công!" to hơn */
+    -fx-font-size: 22px; /* Hoặc kích thước bạn muốn */
 }
 
 /* Link (ví dụ: Quên mật khẩu, Đăng ký tại đây) */
@@ -114,6 +128,8 @@
 /* styles.css */
 
 /* ... (các style .root, .form-label, .form-input, .primary-button đã có và dùng Arial) ... */
+/* Chú thích: Các comment phía dưới là từ file gốc của bạn, chỉ ra rằng có nhiều đoạn lặp lại. */
+/* Tớ sẽ giữ nguyên cấu trúc lặp lại này, chỉ sửa phần .error-label như đã nói. */
 
 /* Logo ở Top Bar */
 .logo-text-uet, .logo-text-vnu, .logo-text-separator, .logo-text-library-main {
@@ -169,7 +185,7 @@
 }
 /* styles.css */
 
-.root {
+.root { /* Định nghĩa .root lần 2 */
     -fx-font-family: "Arial", sans-serif;
     -fx-font-size: 13.5px;
     /* -fx-base: #f4f6f8; */ /* Màu nền chung cho các view nếu cần */
@@ -183,7 +199,7 @@
     -fx-padding: 0 0 10px 0; /* Padding dưới tiêu đề */
 }
 
-.form-input {
+.form-input { /* Định nghĩa .form-input lần 2 */
     -fx-font-family: "Arial", sans-serif;
     -fx-font-size: 13px; /* Font cho ô tìm kiếm */
     -fx-pref-height: 35px;
@@ -193,12 +209,12 @@
     -fx-background-radius: 4px;
     -fx-padding: 5px 8px;
 }
-.form-input:focused {
+.form-input:focused { /* Định nghĩa :focused cho .form-input lần 2 */
     -fx-border-color: #537cac;
     -fx-effect: dropshadow(gaussian, rgba(83,124,172,0.25), 5, 0, 0, 1);
 }
 
-.primary-button {
+.primary-button { /* Định nghĩa .primary-button lần 2 */
     -fx-background-color: #537cac;
     -fx-text-fill: white;
     -fx-font-family: "Arial", sans-serif;
@@ -208,10 +224,10 @@
     -fx-padding: 8px 15px;
     -fx-cursor: hand;
 }
-.primary-button:hover {
+.primary-button:hover { /* Định nghĩa :hover cho .primary-button lần 2 */
     -fx-background-color: #436a9c;
 }
-.primary-button:disabled {
+.primary-button:disabled { /* Định nghĩa :disabled cho .primary-button lần 2 */
     -fx-opacity: 0.65;
 }
 
@@ -249,7 +265,7 @@
     -fx-opacity: 0.65;
 }
 
-.primary-button-small { /* Dùng cho nút Search nhỏ ở cuối HBox */
+.primary-button-small { /* Định nghĩa .primary-button-small lần 2 */
     -fx-background-color: #537cac;
     -fx-text-fill: white;
     -fx-font-family: "Arial", sans-serif;
@@ -259,7 +275,7 @@
     -fx-padding: 7px 12px; /* Điều chỉnh padding cho phù hợp với chiều cao form-input */
     -fx-cursor: hand;
 }
-.primary-button-small:hover {
+.primary-button-small:hover { /* Định nghĩa :hover cho .primary-button-small lần 2 */
     -fx-background-color: #436a9c;
 }
 
@@ -286,8 +302,7 @@
     -fx-text-fill: #718096; /* Màu xám nhạt */
 }
 /* --- Logo TextFlow --- */
-.logo-text-uet, .logo-text-vnu, .logo-text-separator, .logo-text-library-main {
-    /* -fx-font-family: "Arial Black", "Arial Bold", "Arial", sans-serif; /* Có thể dùng Arial Black hoặc Bold */
+.logo-text-uet, .logo-text-vnu, .logo-text-separator, .logo-text-library-main { /* Định nghĩa lần 2, khác font-size */
     -fx-font-family: "Arial Bold", "Arial", sans-serif; /* Ưu tiên Arial Bold */
     -fx-font-weight: bold; /* Đảm bảo đậm nếu Arial Bold không có sẵn */
     -fx-font-size: 34px; /* Có thể điều chỉnh lại kích thước */
@@ -298,8 +313,7 @@
 .logo-text-library-main { -fx-fill: black; } /* Cho chữ "Library" to */
 
 /* --- Các style class cậu đã có cho các phần khác --- */
-.primary-button-small {
-    /* Giữ nguyên hoặc điều chỉnh cho đồng bộ với .primary-button */
+.primary-button-small { /* Định nghĩa .primary-button-small lần 3 */
     -fx-background-color: #537cac;
     -fx-text-fill: white;
     -fx-font-family: "Arial", sans-serif;
@@ -309,16 +323,16 @@
     -fx-padding: 5px 12px;
     -fx-cursor: hand;
 }
-.primary-button-small:hover {
+.primary-button-small:hover { /* Định nghĩa :hover cho .primary-button-small lần 3 */
     -fx-background-color: #436a9c;
 }
-.root {
+.root { /* Định nghĩa .root lần 3 */
     -fx-font-family: "Arial", sans-serif;
     -fx-font-size: 13.5px;
     -fx-base: #f4f6f8;
 }
 
-.label {
+.label { /* Định nghĩa .label lần 3 (giống lần 1) */
     -fx-font-family: "Arial", sans-serif;
     -fx-text-fill: #2d3748; /* Xám đậm hơn cho dễ đọc */
 }
@@ -344,52 +358,15 @@
 }
 
 /* --- Top Bar in AdminDashboard --- */
-.primary-button-small {
-    -fx-background-color: #537cac;
-    -fx-text-fill: white;
-    -fx-font-weight: bold;
-    -fx-background-radius: 15px;
-    -fx-font-size: 12.5px;
-    -fx-padding: 5px 12px;
-}
-.primary-button-small:hover {
-    -fx-background-color: #436a9c;
-}
-
-.username-label-topbar {
-    -fx-font-family: "Arial Bold", "Arial", sans-serif;
-    -fx-font-weight: bold;
-    -fx-font-size: 14px;
-    -fx-text-fill: #1a202c;
-}
-.datetime-label-topbar {
-    -fx-font-size: 11.5px;
-    -fx-text-fill: #718096;
-}
+/* .primary-button-small đã được định nghĩa 3 lần ở trên */
+/* .username-label-topbar đã được định nghĩa ở trên */
+/* .datetime-label-topbar đã được định nghĩa ở trên */
 
 
 /* --- Left Menu in AdminDashboard --- */
-.menu-button {
-    -fx-background-color: transparent;
-    -fx-text-fill: #4A5568;
-    -fx-font-family: "Arial", sans-serif;
-    -fx-font-size: 14px; /* Kích thước font menu */
-    -fx-font-weight: 500;
-    -fx-border-radius: 0;
-    -fx-background-radius: 0;
-    -fx-alignment: baseline-left;
-    -fx-padding: 12px 15px 12px 25px; /* Giảm padding trái một chút */
-    -fx-pref-width: 210px; /* Khớp với prefWidth của VBox menu */
-}
-.menu-button:hover {
-    -fx-background-color: #e9eff5;
-    -fx-text-fill: #2c5282;
-}
-.menu-button.active {
-    -fx-background-color: #537cac;
-    -fx-text-fill: white;
-    -fx-font-weight: bold;
-}
+/* .menu-button đã được định nghĩa ở trên */
+/* .menu-button:hover đã được định nghĩa ở trên */
+/* .menu-button.active đã được định nghĩa ở trên */
 
 /* --- HomeView Specific Styles (Phiên bản tối giản) --- */
 .home-greeting-title {
@@ -439,7 +416,7 @@
     -fx-border-width: 1px;
     -fx-background-color: white;
     -fx-pref-width: 140px;
-    -fx-min-height: 220px; /* Giữ nguyên hoặc điều chỉnh lại cho phù hợp với ảnh 130x85 */
+    -fx-min-height: 220px;
     -fx-pref-height: 220px;
     -fx-alignment: top-center;
     -fx-padding: 10px;
@@ -465,7 +442,7 @@
 }
 /* styles.css (Thêm vào cuối hoặc chỗ phù hợp) */
 
-.view-title {
+.view-title { /* Định nghĩa .view-title lần 2 */
     -fx-font-family: "Arial Bold", "Arial", sans-serif;
     -fx-font-size: 22px;
     -fx-font-weight: bold;
@@ -473,7 +450,7 @@
     -fx-padding: 5px 0 10px 0;
 }
 
-.secondary-button {
+.secondary-button { /* Định nghĩa .secondary-button lần 2 */
     -fx-background-color: #6c757d; /* Màu xám */
     -fx-text-fill: white;
     -fx-font-weight: bold;
@@ -481,15 +458,15 @@
     -fx-font-size: 13px;
     -fx-padding: 5px 10px;
 }
-.secondary-button:hover {
+.secondary-button:hover { /* Định nghĩa :hover cho .secondary-button lần 2 */
     -fx-background-color: #5a6268;
 }
-.secondary-button:disabled {
+.secondary-button:disabled { /* Định nghĩa :disabled cho .secondary-button lần 2 */
     -fx-opacity: 0.6;
 }
 
 
-.danger-button {
+.danger-button { /* Định nghĩa .danger-button lần 2 */
     -fx-background-color: #dc3545; /* Màu đỏ */
     -fx-text-fill: white;
     -fx-font-weight: bold;
@@ -497,25 +474,423 @@
     -fx-font-size: 13px;
     -fx-padding: 5px 10px;
 }
-.danger-button:hover {
+.danger-button:hover { /* Định nghĩa :hover cho .danger-button lần 2 */
     -fx-background-color: #c82333;
 }
-.danger-button:disabled {
+.danger-button:disabled { /* Định nghĩa :disabled cho .danger-button lần 2 */
     -fx-opacity: 0.6;
 }
 
 /* Style cho TableView (tùy chọn) */
-.table-view .column-header-background {
-    -fx-background-color: #e9eff5; /* Màu nền cho header cột */
-}
-.table-view .column-header .label {
-    -fx-text-fill: #2c3e50; /* Màu chữ cho header cột */
-    -fx-font-family: "Arial Bold", "Arial", sans-serif;
-    -fx-font-size: 13px;
-    -fx-padding: 8px;
-}
-.table-view .table-cell {
-    -fx-padding: 6px 8px; /* Padding cho cell */
+/* .table-view ... đã được định nghĩa ở trên */
+
+/* styles.css */
+/* ... (các style đã có) ... */
+
+.root-details { /* Style cho cửa sổ chi tiết sách nếu muốn khác biệt */
     -fx-font-family: "Arial", sans-serif;
     -fx-font-size: 13px;
+}
+
+.detail-field-label {
+    -fx-font-weight: bold;
+    -fx-text-fill: #4A5568; /* Màu xám đậm */
+    -fx-min-width: 90px; /* Đảm bảo các label căn thẳng hàng */
+}
+
+.detail-field-label-bold { /* Dùng cho "Hiện có:" */
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+    -fx-min-width: 90px;
+}
+
+.detail-field-value {
+    -fx-text-fill: #2d3748;
+}
+
+.detail-field-value-highlight { /* Dùng cho số lượng có sẵn */
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-text-fill: #007e3f; /* Màu xanh lá nếu còn nhiều, hoặc đỏ nếu ít */
+}
+
+.detail-section-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #537cac; /* Màu xanh dương */
+    -fx-border-color: transparent transparent #537cac transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 0 0 3px 0;
+}
+
+.book-cover-detail { /* Style cho ảnh bìa trong view chi tiết */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 10, 0.3, 0, 1);
+    -fx-background-color: #e0e0e0; /* Màu nền placeholder cho ảnh */
+}
+
+/* Style cho TextArea mô tả (nếu form-input chưa đủ) */
+.text-area.description-area { /* Hoặc chỉ .text-area nếu muốn áp dụng chung */
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 13px;
+    -fx-border-color: #d0d0d0;
+    -fx-background-color: #f9f9f9;
+    -fx-focus-color: #537cac; /* Màu viền khi focus TextArea */
+}
+
+.content-card {
+    -fx-background-color: #ffffff; /* Nền trắng */
+    -fx-background-radius: 8px;   /* Bo góc nhẹ */
+    -fx-padding: 20px;            /* Padding bên trong card */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 10, 0, 1, 2); /* Đổ bóng nhẹ hơn */
+    /* Cậu có thể thêm border nếu muốn, ví dụ: -fx-border-color: #e0e0e0; -fx-border-width: 1px; -fx-border-radius: 8px; */
+}
+
+/* Điều chỉnh thêm cho các style class khác nếu cần, ví dụ: */
+.sidebar-user-custom {
+    -fx-background-color: #ffffff;
+    -fx-padding: 20px 10px 20px 10px;
+    -fx-border-color: transparent #e0e0e0 transparent transparent; /* Đường kẻ mảnh bên phải sidebar */
+    -fx-border-width: 0px 1px 0px 0px;
+}
+
+.scroll-pane-dashboard-user > .viewport { /* Để nền của viewport trong ScrollPane cũng là màu xám */
+    -fx-background-color: #f4f6f8;
+}
+.scroll-pane-dashboard-user { /* Để bản thân ScrollPane không có viền và nền riêng nếu không muốn */
+    -fx-background-color: transparent;
+    -fx-background: #f4f6f8;
+    -fx-border-color: transparent;
+}
+
+/* Có thể các style class như top-bar-user, search-bar-user-container,... cũng cần định nghĩa */
+.top-bar-user {
+    -fx-background-color: #ffffff;
+    -fx-padding: 8px 20px 8px 20px;
+    -fx-border-color: transparent transparent #e0e0e0 transparent; /* Đường kẻ mảnh dưới top-bar */
+    -fx-border-width: 0 0 1px 0;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 8, 0, 0, 2);
+}
+
+.view-header-pane {
+    /* Có thể có nền riêng hoặc để trong suốt tùy ý */
+    -fx-padding: 10px 0px 15px 0px; /* Top, Right, Bottom, Left - không cần padding trái phải nhiều nếu đã căn lề ở cha */
+    -fx-border-color: transparent transparent #e0e0e0 transparent; /* Viền dưới nhẹ nếu muốn */
+    -fx-border-width: 0 0 1px 0;
+    -fx-spacing: 5px; /* Khoảng cách giữa title và subtitle */
+}
+
+.view-title { /* Đã có từ trước, đảm bảo nó đủ to và đậm */
+    -fx-font-family: "Arial Bold", "Arial", sans-serif;
+    -fx-font-size: 24px; /* Hoặc to hơn tùy ý */
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+}
+
+.view-subtitle {
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 13px;
+    -fx-text-fill: #5A6772;
+}
+
+.due-soon-listview-user {
+    -fx-min-height: 280px; /* Hoặc pref-height */
+    -fx-border-color: #cccccc; /* Ví dụ màu viền */
+    -fx-border-width: 1px;
+    -fx-background-color: #ffffff; /* Nền trắng cho listview */
+}
+.due-soon-listview-user .placeholder .label { /* Style cho chữ placeholder */
+    -fx-text-fill: #888888;
+}
+
+.book-card {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e0e0e0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 5, 0, 1, 1);
+    /* -fx-pref-width: 220px; /* Hoặc để TilePane tự quyết định */
+}
+
+.book-card-cover-image {
+    /* Có thể thêm hiệu ứng hoặc bo góc nhẹ */
+    -fx-background-radius: 4px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0, 0, 1);
+}
+
+.book-card-title {
+    -fx-font-size: 1.1em; /* 14px nếu base là 13.5px */
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+}
+
+.book-card-author {
+    -fx-font-size: 0.9em; /* 12px */
+    -fx-text-fill: #5a6772;
+}
+
+.book-card-status-borrowed {
+    -fx-font-size: 0.85em;
+    -fx-text-fill: #ffffff;
+    -fx-background-color: #537cac; /* Màu xanh dương */
+    -fx-padding: 2px 6px;
+    -fx-background-radius: 4px;
+}
+.book-card-status-overdue {
+    -fx-font-size: 0.85em;
+    -fx-text-fill: #ffffff;
+    -fx-background-color: #dc3545; /* Màu đỏ */
+    -fx-padding: 2px 6px;
+    -fx-background-radius: 4px;
+}
+.book-card-status-returned {
+    -fx-font-size: 0.85em;
+    -fx-text-fill: #ffffff;
+    -fx-background-color: #6c757d; /* Màu xám */
+    -fx-padding: 2px 6px;
+    -fx-background-radius: 4px;
+}
+
+
+.book-card-info-section {
+    -fx-border-color: transparent transparent #f0f0f0 transparent;
+    -fx-border-width: 1px 0 0 0;
+    -fx-padding: 8px 0 0 0;
+    -fx-margin-top: 8px; /* Khoảng cách với phần trên */
+}
+
+.book-card-date-info {
+    -fx-font-size: 0.85em;
+    -fx-text-fill: #4A5568;
+}
+.book-card-date-info-due {
+    -fx-font-size: 0.85em;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+}
+.book-card-days-remaining {
+    -fx-font-size: 0.85em;
+    -fx-text-fill: #007e3f; /* Màu xanh lá */
+}
+.book-card-days-remaining.overdue { /* Thêm class này nếu muốn màu khác khi quá hạn */
+    -fx-text-fill: #D8000C;
+}
+
+
+.book-card-progress .bar {
+    -fx-background-color: #537cac; /* Màu của thanh progress */
+    -fx-padding: 4px; /* Làm thanh progress dày hơn chút */
+}
+.book-card-progress.progress-bar-overdue .bar {
+    -fx-background-color: #dc3545; /* Màu đỏ cho progress bar quá hạn */
+}
+.book-card-progress .track {
+    -fx-background-color: #e9eff5; /* Màu nền của track */
+}
+
+.book-tile-pane {
+    -fx-background-color: transparent; /* Nền của TilePane trong suốt để lộ nền ScrollPane */
+}
+
+.tab-content-scrollpane {
+    -fx-background-color: #ffffff; /* Nền trắng cho nội dung tab */
+}
+
+.my-bookshelf-tabpane .tab:selected .tab-label { /* Style cho tab được chọn */
+    -fx-text-fill: #537cac;
+    -fx-font-weight: bold;
+}
+
+.request-card {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e0e0e0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 5, 0, 1, 1);
+}
+
+.request-card-status {
+    -fx-font-size: 0.9em;
+    -fx-font-weight: bold;
+    -fx-padding: 3px 7px;
+    -fx-background-radius: 4px;
+    -fx-text-fill: white; /* Mặc định chữ trắng, nền sẽ đổi màu */
+}
+
+.status-pending { -fx-background-color: #ffc107; -fx-text-fill: #333; /* Vàng */ }
+.status-approved { -fx-background-color: #28a745; /* Xanh lá */ }
+.status-rejected { -fx-background-color: #dc3545; /* Đỏ */ }
+.status-canceled { -fx-background-color: #6c757d; /* Xám */ }
+.status-completed { -fx-background-color: #17a2b8; /* Xanh dương nhạt */ }
+.status-expired { -fx-background-color: #fd7e14; /* Cam */ }
+
+
+.request-card-notes {
+    -fx-font-size: 0.85em;
+    -fx-text-fill: #555;
+    -fx-font-style: italic;
+}
+.book-card-date-info-pickup {
+    -fx-font-size: 0.85em;
+    -fx-font-weight: bold;
+    -fx-text-fill: #007bff; /* Màu xanh dương cho hạn lấy sách */
+}
+
+.author-card {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e0e0e0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 4, 0, 0, 1);
+    -fx-alignment: center; /* Căn giữa các phần tử con */
+}
+
+.author-card:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 8, 0, 0, 2);
+}
+
+.author-card-avatar {
+    -fx-border-radius: 50%; /* Bo tròn ảnh avatar */
+    -fx-background-radius: 50%;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0, 0, 1);
+}
+
+.author-card-name {
+    -fx-font-size: 1.05em;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333;
+    -fx-text-alignment: center;
+}
+
+.author-card-nationality {
+    -fx-font-size: 0.85em;
+    -fx-text-fill: #666;
+    -fx-text-alignment: center;
+}
+
+.author-tile-pane {
+    /* Có thể giống book-tile-pane hoặc tùy chỉnh */
+    -fx-background-color: transparent;
+}
+
+.filter-bar-genre {
+    -fx-background-color: #f0f0f0; /* Hoặc màu nền khác tùy ý */
+    -fx-border-color: transparent transparent #d0d0d0 transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 8px 15px; /* Điều chỉnh padding */
+}
+
+.combo-box-filter {
+    /* Style cho ComboBox nếu cần */
+}
+
+.placeholder-text-tilepane { /* Style cho label placeholder trong TilePane */
+    -fx-font-size: 1.1em;
+    -fx-text-fill: #777777;
+    -fx-padding: 20px;
+}
+
+.filter-section-container { /* VBox chứa cả 2 HBox filter trong tab Sách */
+    -fx-background-color: #f9f9f9; /* Hoặc màu nền khác tùy ý */
+    -fx-border-color: transparent transparent #e0e0e0 transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 0px 20px 10px 20px; /* Chỉ padding dưới, vì HBox con đã có padding trên/trái/phải */
+}
+
+.filter-bar-controls { /* HBox chứa Label và ComboBox/TextField/Button */
+    /* -fx-padding: 10px 0px; (Nếu muốn khoảng cách giữa các HBox filter) */
+}
+
+.filter-label {
+    -fx-font-size: 0.95em;
+    -fx-text-fill: #333333;
+    -fx-padding: 0 5px 0 0; /* Khoảng cách với control bên phải */
+}
+
+.combo-box-filter {
+    /* Style cho ComboBox nếu cần */
+}
+.form-input-tab-search {
+    -fx-font-family: "Arial", sans-serif;
+    -fx-font-size: 13px;
+    -fx-pref-height: 30px; /* Hoặc chiều cao phù hợp với nút small */
+    -fx-border-color: #d0d0d0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 4px 7px;
+}
+.form-input-tab-search:focused {
+    -fx-border-color: #537cac;
+}
+
+.subview-container-white { /* Dùng cho root của các view con nếu muốn nền trắng */
+    -fx-background-color: #ffffff;
+}
+.form-title-large {
+    -fx-font-size: 1.6em; /* ~20-22px */
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+    -fx-padding-bottom: 10px;
+}
+.content-card-highlight {
+    -fx-background-color: #fff3e0; /* Màu nền cam nhạt cho card thông điệp */
+    -fx-background-radius: 8px;
+    -fx-padding: 25px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 8, 0, 1, 2);
+    -fx-alignment: center;
+}
+.highlight-message-accent {
+    -fx-font-size: 1.8em; /* ~24px */
+    -fx-font-weight: bold;
+    -fx-fill: #ff9800; /* Màu cam đậm */
+}
+.highlight-message-normal {
+    -fx-font-size: 1.8em;
+    -fx-font-weight: bold;
+    -fx-fill: #333;
+}
+.highlight-message-normal-large {
+    -fx-font-size: 1.5em; /* ~20px */
+    -fx-font-weight: bold;
+    -fx-fill: #333;
+    -fx-padding-bottom: 10px;
+}
+
+.faq-scroll-pane {
+    -fx-background-color: transparent; /* Để nền của ScrollPane trong suốt */
+}
+.faq-scroll-pane .content { /* Để nội dung bên trong ScrollPane cũng trong suốt nếu cần */
+    -fx-background-color: transparent;
+}
+
+.faq-accordion .titled-pane > .title { /* Style cho tiêu đề câu hỏi */
+    -fx-background-color: #f0f4f8; /* Màu nền nhẹ cho tiêu đề */
+    -fx-font-size: 1.05em;
+    -fx-text-fill: #333;
+    -fx-font-weight: bold;
+    -fx-padding: 10px 15px;
+}
+.faq-accordion .titled-pane:hover > .title {
+    -fx-background-color: #e6edf2;
+}
+
+.faq-accordion .titled-pane > .content { /* Style cho vùng nội dung câu trả lời */
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent transparent #e0e0e0 transparent; /* Viền dưới nhẹ */
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 5px; /* Padding cho ScrollPane bên trong */
+}
+
+.faq-answer-text { /* Style cho Text chứa câu trả lời */
+    -fx-fill: #444;
+    -fx-line-spacing: 2px;
+}
+
+.label-regular-italic {
+    -fx-font-style: italic;
+    -fx-text-fill: #555;
+    -fx-padding-bottom: 10px;
 }

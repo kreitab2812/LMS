@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Text?>
+<?import javafx.scene.text.TextFlow?>
+
+<StackPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.lms.quanlythuvien.controllers.common.RegistrationScreenController"
+           style="-fx-background-color: #f4f6f8;"
+           stylesheets="@/com/lms/quanlythuvien/css/styles.css"
+           alignment="CENTER">
+    <children>
+        <VBox alignment="TOP_CENTER" maxHeight="650.0" maxWidth="450.0"
+              style="-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 15, 0.3, 0, 0);"
+              spacing="10.0">
+            <padding>
+                <Insets top="25.0" right="40.0" bottom="25.0" left="40.0"/>
+            </padding>
+
+            <children>
+                <TextFlow textAlignment="CENTER" VBox.vgrow="NEVER">
+                    <Text text="UET" styleClass="logo-text-uet"/>
+                    <Text text="-" styleClass="logo-text-separator"/>
+                    <Text text="VNU" styleClass="logo-text-vnu"/>
+                </TextFlow>
+                <Text text="Library" styleClass="logo-text-library-main" textAlignment="CENTER">
+                    <VBox.margin>
+                        <Insets bottom="5.0"/>
+                    </VBox.margin>
+                </Text>
+
+                <Label text="Đăng ký tài khoản" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2d3748;">
+                    <VBox.margin>
+                        <Insets top="10.0"/>
+                    </VBox.margin>
+                </Label>
+                <Label text="Dành cho Người dùng" style="-fx-font-size: 13px; -fx-text-fill: #555;">
+                    <VBox.margin>
+                        <Insets bottom="10.0"/>
+                    </VBox.margin>
+                </Label>
+
+                <Label fx:id="errorLabel" text="" styleClass="error-label" managed="false" visible="false">
+                    <VBox.margin>
+                        <Insets top="0.0" bottom="5.0"/>
+                    </VBox.margin>
+                </Label>
+
+                <Label text="Tên đăng nhập" styleClass="form-label"/>
+                <TextField fx:id="usernameField" promptText="Chọn tên đăng nhập của bạn" styleClass="form-input"/>
+
+                <Label text="Email" styleClass="form-label">
+                    <VBox.margin>
+                        <Insets top="8.0"/>
+                    </VBox.margin>
+                </Label>
+                <TextField fx:id="emailField" promptText="vidu@vnu.edu.vn" styleClass="form-input"/>
+
+                <Label text="Mật khẩu (tối thiểu 7 ký tự)" styleClass="form-label">
+                    <VBox.margin>
+                        <Insets top="8.0"/>
+                    </VBox.margin>
+                </Label>
+                <HBox spacing="0" alignment="CENTER_LEFT" styleClass="form-input">
+                    <padding><Insets left="10.0" right="5.0"/></padding>
+                    <StackPane HBox.hgrow="ALWAYS">
+                        <children>
+                            <PasswordField fx:id="passwordField" promptText="Nhập mật khẩu của bạn"
+                                           style="-fx-background-color: transparent; -fx-border-width: 0; -fx-padding: 0;"/>
+                            <TextField fx:id="visiblePasswordField" promptText="Nhập mật khẩu của bạn"
+                                       style="-fx-background-color: transparent; -fx-border-width: 0; -fx-padding: 0;"
+                                       visible="false" managed="false"/>
+                        </children>
+                    </StackPane>
+                    <ImageView fx:id="togglePasswordVisibility" fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" style="-fx-cursor: hand;"
+                               onMouseClicked="#toggleMainPasswordVisibilityClicked">
+                        <image><Image url="@/com/lms/quanlythuvien/images/eye_slash_icon.png"/></image>
+                        <HBox.margin><Insets left="5.0" right="3.0"/></HBox.margin>
+                    </ImageView>
+                </HBox>
+
+                <Label text="Xác nhận mật khẩu" styleClass="form-label">
+                    <VBox.margin>
+                        <Insets top="8.0"/>
+                    </VBox.margin>
+                </Label>
+                <HBox spacing="0" alignment="CENTER_LEFT" styleClass="form-input">
+                    <padding><Insets left="10.0" right="5.0"/></padding>
+                    <StackPane HBox.hgrow="ALWAYS">
+                        <children>
+                            <PasswordField fx:id="confirmPasswordField" promptText="Xác nhận lại mật khẩu của bạn"
+                                           style="-fx-background-color: transparent; -fx-border-width: 0; -fx-padding: 0;"/>
+                            <TextField fx:id="visibleConfirmPasswordField" promptText="Xác nhận lại mật khẩu của bạn"
+                                       style="-fx-background-color: transparent; -fx-border-width: 0; -fx-padding: 0;"
+                                       visible="false" managed="false"/>
+                        </children>
+                    </StackPane>
+                    <ImageView fx:id="toggleConfirmPasswordVisibility" fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" style="-fx-cursor: hand;"
+                               onMouseClicked="#toggleConfirmPasswordVisibilityClicked">
+                        <image><Image url="@/com/lms/quanlythuvien/images/eye_slash_icon.png"/></image>
+                        <HBox.margin><Insets left="5.0" right="3.0"/></HBox.margin>
+                    </ImageView>
+                </HBox>
+
+                <Button fx:id="registerButton" text="Đăng ký" styleClass="primary-button"
+                        maxWidth="Infinity" onAction="#handleRegisterButtonAction">
+                    <VBox.margin>
+                        <Insets top="20.0"/>
+                    </VBox.margin>
+                </Button>
+
+                <HBox alignment="CENTER" spacing="5.0">
+                    <children>
+                        <Label text="Đã có tài khoản?" style="-fx-font-size: 12px; -fx-text-fill: #4A5568;"/>
+                        <Label fx:id="loginNowLink" text="Đăng nhập ngay!" styleClass="link-label"
+                               onMouseClicked="#handleLoginNowLinkClick"/>
+                    </children>
+                    <VBox.margin>
+                        <Insets top="15.0"/>
+                    </VBox.margin>
+                </HBox>
+            </children>
+        </VBox>
+    </children>
+</StackPane>
