@@ -1,17 +1,17 @@
 package com.lms.quanlythuvien.services.system;
 
 import com.lms.quanlythuvien.models.system.Notification;
-import com.lms.quanlythuvien.models.system.Notification.NotificationType;
+import com.lms.quanlythuvien.models.system.Notification.NotificationType; // Đảm bảo import đúng
 import com.lms.quanlythuvien.utils.database.DatabaseManager;
 
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays; // Thêm import này nếu dùng List.of hoặc Arrays.asList
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors; // Thêm import này nếu dùng stream cho IN clause
+import java.util.stream.Collectors;
 
 public class NotificationService {
     private static NotificationService instance;
@@ -29,9 +29,9 @@ public class NotificationService {
     private Notification mapResultSetToNotification(ResultSet rs) throws SQLException {
         return new Notification(
                 rs.getString("id"),
-                rs.getString("userId"), // Có thể null nếu là thông báo hệ thống cho admin
+                rs.getString("userId"),
                 rs.getString("message"),
-                NotificationType.valueOf(rs.getString("type").toUpperCase()),
+                NotificationType.valueOf(rs.getString("type").toUpperCase()), // Giả sử type trong DB lưu là tên Enum
                 rs.getInt("isRead") == 1,
                 LocalDateTime.parse(rs.getString("createdAt"), DB_DATETIME_FORMATTER),
                 rs.getString("relatedItemId"),
@@ -42,14 +42,15 @@ public class NotificationService {
     public Optional<Notification> createNotification(String userId, String message, NotificationType type, String relatedItemId, String actionLink) {
         String sql = "INSERT INTO Notifications (id, userId, message, type, isRead, createdAt, relatedItemId, actionLink) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        // Tạo đối tượng Notification mới, ID và createdAt sẽ được tự động gán trong constructor của Notification
         Notification notification = new Notification(userId, message, type, relatedItemId, actionLink);
 
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, notification.getId());
-            pstmt.setString(2, notification.getUserId()); // userId có thể null nếu thông báo không cho user cụ thể
+            pstmt.setString(2, notification.getUserId());
             pstmt.setString(3, notification.getMessage());
-            pstmt.setString(4, notification.getType().name());
+            pstmt.setString(4, notification.getType().name()); // Lưu tên của Enum constant
             pstmt.setInt(5, notification.isRead() ? 1 : 0);
             pstmt.setString(6, notification.getCreatedAt().format(DB_DATETIME_FORMATTER));
             pstmt.setString(7, notification.getRelatedItemId());
@@ -130,8 +131,8 @@ public class NotificationService {
                 System.out.println("DEBUG_NOTIF_SVC_MARK_ALL_READ: Marked " + affectedRows + " notifications as read for user " + userId);
                 return true;
             }
-            System.out.println("INFO_NOTIF_SVC_MARK_ALL_READ: No unread notifications to mark for user " + userId);
-            return false;
+            // System.out.println("INFO_NOTIF_SVC_MARK_ALL_READ: No unread notifications to mark for user " + userId); // Bỏ log này nếu không có gì để update cũng là false
+            return false; // Trả về false nếu không có dòng nào được cập nhật
         } catch (SQLException e) {
             System.err.println("ERROR_NOTIF_SVC_MARK_ALL_READ: Could not mark all as read for user " + userId + ": " + e.getMessage());
         }
@@ -143,11 +144,7 @@ public class NotificationService {
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, notificationId);
-            int affectedRows = pstmt.executeUpdate();
-            if (affectedRows > 0) {
-                System.out.println("DEBUG_NOTIF_SVC_DELETE: Notification " + notificationId + " deleted.");
-                return true;
-            }
+            return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("ERROR_NOTIF_SVC_DELETE: Could not delete notification " + notificationId + ": " + e.getMessage());
         }
@@ -159,55 +156,37 @@ public class NotificationService {
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, userId);
-            int affectedRows = pstmt.executeUpdate();
-            if (affectedRows > 0) {
-                System.out.println("DEBUG_NOTIF_SVC_DELETE_READ: Deleted " + affectedRows + " read notifications for user " + userId);
-                return true;
-            }
-            System.out.println("INFO_NOTIF_SVC_DELETE_READ: No read notifications to delete for user " + userId);
-            return false;
+            return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("ERROR_NOTIF_SVC_DELETE_READ: Could not delete read notifications for user " + userId + ": " + e.getMessage());
         }
         return false;
     }
 
-    // --- CÁC PHƯƠNG THỨC MỚI CHO ADMIN NOTIFICATIONS (STUBS) ---
 
-    /**
-     * Lấy danh sách các thông báo dành cho quản trị viên (chung cho tất cả admin).
-     * @param unreadOnly true nếu chỉ lấy các thông báo chưa đọc.
-     * @return Danh sách các thông báo.
-     */
     public List<Notification> getNotificationsForAdmin(boolean unreadOnly) {
-        System.out.println("DEBUG_NOTIF_SVC_GET_ADMIN: Fetching admin notifications (unreadOnly=" + unreadOnly + ") - STUB METHOD - Needs Real Implementation.");
+        System.out.println("DEBUG_NOTIF_SVC_GET_ADMIN: Fetching admin notifications (unreadOnly=" + unreadOnly + ")");
         List<Notification> adminNotifications = new ArrayList<>();
 
-        // TODO: Triển khai logic thực sự để lấy thông báo cho admin.
-        // Các loại thông báo admin có thể quan tâm: LOAN_REQUEST, USER_QUESTION, LOAN_OVERDUE (system-wide), etc.
-        // Một cách là query các NotificationType cụ thể.
-        // Hoặc nếu Notification có trường `userId` là NULL hoặc một giá trị đặc biệt ("ADMIN_ALERTS") cho thông báo hệ thống.
-
-        // Ví dụ query các loại cụ thể:
+        // *** QUAN TRỌNG: Rà soát và cập nhật danh sách NotificationType này cho đúng với enum Notification.NotificationType của bạn ***
         List<NotificationType> adminNotificationTypes = Arrays.asList(
-                // Thêm các NotificationType mà Admin cần theo dõi từ yêu cầu của cậu
-                // Ví dụ (cần định nghĩa các Enum này trong NotificationType nếu chưa có):
-                // NotificationType.NEW_LOAN_REQUEST,       // USER yêu cầu mượn sách
-                // NotificationType.NEW_USER_QUESTION,      // USER hỏi đáp
-                // NotificationType.LOAN_DUE_REMINDER_ADMIN, // USER nào sách đến hạn phải trả
-                // NotificationType.FINE_CALCULATED,          // Thông báo khi người này quá hạn phải trả nhiêu phí
-                // NotificationType.LOAN_CONFIRMED,           // Thông báo khi đã xác nhận yêu cầu mượn sách
-                // NotificationType.BOOK_DELIVERED,           // Đã đưa sách thành công
-                NotificationType.LOAN_OVERDUE,             // Thông báo sách quá hạn chung
-                NotificationType.WARNING,                  // Cảnh báo hệ thống chung
-                NotificationType.ERROR                     // Lỗi hệ thống chung
+                NotificationType.NEW_LOAN_REQUEST,        // User yêu cầu mượn sách
+                NotificationType.NEW_USER_QUESTION,       // User hỏi đáp
+                NotificationType.USER_LOAN_OVERDUE_ADMIN, // Sách của User bị quá hạn
+                NotificationType.NEW_DONATION_REQUEST,    // User quyên góp sách
+                NotificationType.BOOK_STOCK_LOW_ADMIN,    // Ví dụ: Sách sắp hết trong kho (cần định nghĩa type này)
+                NotificationType.SYSTEM_ALERT,            // Ví dụ: Cảnh báo hệ thống chung (cần định nghĩa type này)
+                NotificationType.WARNING,                   // Có thể dùng cho các cảnh báo chung khác
+                NotificationType.ERROR                      // Có thể dùng cho các lỗi chung khác
+                // Bỏ: NotificationType.LOAN_OVERDUE (Vì đã có USER_LOAN_OVERDUE_ADMIN cụ thể hơn,
+                // hoặc nếu LOAN_OVERDUE là một type riêng với ý nghĩa khác thì giữ lại và định nghĩa trong Enum)
         );
 
         if (adminNotificationTypes.isEmpty()) {
-            return adminNotifications; // Không có type nào để query
+            System.out.println("DEBUG_NOTIF_SVC_GET_ADMIN: No specific admin notification types defined to query.");
+            return adminNotifications;
         }
 
-        // Xây dựng phần (type = ? OR type = ? OR ...) hoặc (type IN (?,?,...))
         String typePlaceholders = adminNotificationTypes.stream()
                 .map(type -> "?")
                 .collect(Collectors.joining(", "));
@@ -215,6 +194,9 @@ public class NotificationService {
         StringBuilder sqlBuilder = new StringBuilder("SELECT * FROM Notifications WHERE type IN (");
         sqlBuilder.append(typePlaceholders);
         sqlBuilder.append(")");
+        // Hoặc: Lấy các thông báo có userId là NULL hoặc một giá trị đặc biệt cho admin
+        // StringBuilder sqlBuilder = new StringBuilder("SELECT * FROM Notifications WHERE userId IS NULL OR userId = 'ADMIN_SYSTEM'");
+
 
         if (unreadOnly) {
             sqlBuilder.append(" AND isRead = 0");
@@ -226,7 +208,7 @@ public class NotificationService {
 
             int paramIndex = 1;
             for (NotificationType type : adminNotificationTypes) {
-                pstmt.setString(paramIndex++, type.name());
+                pstmt.setString(paramIndex++, type.name()); // Lưu trữ và truy vấn bằng tên của Enum Constant
             }
 
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -238,36 +220,39 @@ public class NotificationService {
             System.err.println("ERROR_NOTIF_SVC_GET_ADMIN: DB error fetching admin notifications: " + e.getMessage());
         }
 
-        System.out.println("DEBUG_NOTIF_SVC_GET_ADMIN: Returning " + adminNotifications.size() + " admin notifications from stub.");
+        System.out.println("DEBUG_NOTIF_SVC_GET_ADMIN: Returning " + adminNotifications.size() + " admin notifications.");
         return adminNotifications;
     }
 
-    /**
-     * Đánh dấu tất cả các thông báo (phù hợp với admin) là đã đọc.
-     * @return true nếu có ít nhất một thông báo được cập nhật, false nếu không hoặc có lỗi.
-     */
     public boolean markAllAdminNotificationsAsRead() {
-        System.out.println("DEBUG_NOTIF_SVC_MARK_ALL_ADMIN_READ: Marking all admin notifications as read - STUB METHOD - Needs Real Implementation.");
+        System.out.println("DEBUG_NOTIF_SVC_MARK_ALL_ADMIN_READ: Marking all admin notifications as read.");
         int affectedRows = 0;
 
-        // TODO: Triển khai logic thực sự.
-        // Cập nhật tất cả các thông báo có type phù hợp với admin và isRead = 0.
+        // *** QUAN TRỌNG: Rà soát và cập nhật danh sách NotificationType này cho đúng với enum Notification.NotificationType của bạn ***
         List<NotificationType> adminNotificationTypes = Arrays.asList(
-                // Sao chép danh sách các type từ getNotificationsForAdmin
-                NotificationType.LOAN_OVERDUE,
+                NotificationType.NEW_LOAN_REQUEST,
+                NotificationType.NEW_USER_QUESTION,
+                NotificationType.USER_LOAN_OVERDUE_ADMIN,
+                NotificationType.NEW_DONATION_REQUEST,
+                NotificationType.BOOK_STOCK_LOW_ADMIN,
+                NotificationType.SYSTEM_ALERT,
                 NotificationType.WARNING,
                 NotificationType.ERROR
-                // ... thêm các type khác mà admin quản lý
         );
 
         if (adminNotificationTypes.isEmpty()) {
+            System.out.println("DEBUG_NOTIF_SVC_MARK_ALL_ADMIN_READ: No specific admin notification types defined to update.");
             return false;
         }
 
         String typePlaceholders = adminNotificationTypes.stream()
                 .map(type -> "?")
                 .collect(Collectors.joining(", "));
+        // Cập nhật tất cả các thông báo (chưa đọc) thuộc các loại dành cho admin
         String sql = "UPDATE Notifications SET isRead = 1 WHERE isRead = 0 AND type IN (" + typePlaceholders + ")";
+        // Hoặc nếu admin notifications có userId đặc biệt:
+        // String sql = "UPDATE Notifications SET isRead = 1 WHERE isRead = 0 AND (userId IS NULL OR userId = 'ADMIN_SYSTEM')";
+
 
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {

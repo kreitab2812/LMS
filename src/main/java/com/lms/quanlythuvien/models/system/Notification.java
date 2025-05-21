@@ -7,46 +7,65 @@ import java.util.UUID;
 public class Notification {
 
     public enum NotificationType {
-        INFO,                           // Thông tin chung
-        SUCCESS,                        // Thành công (ví dụ: yêu cầu được duyệt USER)
-        WARNING,                        // Cảnh báo (ví dụ: sách USER sắp hết hạn)
-        ERROR,                          // Lỗi (ví dụ: yêu cầu USER bị từ chối)
+        // User-facing types
+        INFO("Thông tin chung"),
+        SUCCESS("Thành công"),
+        WARNING("Cảnh báo"),
+        ERROR("Lỗi"),
+        LOAN_APPROVED_USER("Yêu cầu mượn được duyệt"),
+        LOAN_REJECTED_USER("Yêu cầu mượn bị từ chối"),
+        LOAN_DUE_SOON_USER("Sách sắp đến hạn trả"),
+        USER_YoutubeED("Câu hỏi đã được trả lời"), // <<< SỬA TYPO TỪ USER_YoutubeED
+        DONATION_PROCESSED_USER("Quyên góp đã được xử lý"),
+        ACCOUNT_LOCKED_USER("Tài khoản bị khóa"), // Ví dụ thêm
+        FINE_ISSUED_USER("Bạn có khoản phạt mới"),   // Ví dụ thêm
 
-        // Các loại thông báo cho User (ví dụ)
-        LOAN_APPROVED_USER,             // Yêu cầu mượn của USER được duyệt
-        LOAN_REJECTED_USER,             // Yêu cầu mượn của USER bị từ chối
-        LOAN_DUE_SOON_USER,             // Sách của USER sắp đến hạn trả
-        USER_YoutubeED,         // Câu hỏi của USER đã được trả lời
-        DONATION_PROCESSED_USER,        // Yêu cầu quyên góp của USER đã được xử lý (duyệt/từ chối)
+        // Admin-facing types
+        NEW_LOAN_REQUEST("Yêu cầu mượn mới"),
+        NEW_USER_QUESTION("Câu hỏi mới từ người dùng"),
+        USER_LOAN_OVERDUE_ADMIN("Sách của người dùng quá hạn"), // Thông báo cho Admin
+        NEW_DONATION_REQUEST("Yêu cầu quyên góp mới"), // <<< Giữ lại cái này, có displayName
+        // USER_LOAN_RETURNED_ADMIN("User đã trả sách"), // Bỏ nếu không cần thiết, hoặc thêm displayName
+        // NEW_DONATION_REQUEST_ADMIN, // <<< BỎ cái này đi để tránh trùng lặp nếu NEW_DONATION_REQUEST đã đủ ý nghĩa
 
-        // Các loại thông báo cho Admin (đây là các giá trị cậu cần thêm)
-        NEW_LOAN_REQUEST,               // <<< THÊM VÀO: Có yêu cầu mượn sách mới từ User
-        NEW_USER_QUESTION,              // <<< THÊM VÀO: Có câu hỏi mới từ User
-        USER_LOAN_OVERDUE_ADMIN,        // <<< THÊM VÀO: Thông báo cho Admin về sách quá hạn của User cụ thể
-        USER_LOAN_RETURNED_ADMIN,       // <<< THÊM VÀO: Thông báo cho Admin khi User trả sách (nếu cần)
-        NEW_DONATION_REQUEST_ADMIN,     // <<< THÊM VÀO: Có yêu cầu quyên góp mới
-        // Các loại cho Admin khác nếu cần
-        LOAN_DUE_SOON_ADMIN,            // Thông báo cho Admin về các sách sắp đến hạn (tổng hợp)
-        LOAN_OVERDUE,                   // Giữ lại nếu đây là loại chung cho admin về các sách đã quá hạn
-        LOAN_APPROVED,                  // Giữ lại nếu đây là loại chung (xác nhận admin đã duyệt)
+        LOAN_DUE_SOON_ADMIN("Sách sắp hết hạn (Admin)"), // Ví dụ
+        // LOAN_OVERDUE, // Nếu dùng chung, nên có displayName rõ ràng "Sách quá hạn (Chung)"
+        // LOAN_APPROVED, // Nếu dùng chung
 
-        SYSTEM_ALERT,                   // Cảnh báo hệ thống chung cho Admin
-        NEW_BOOK_MATCHING_PREFERENCE    // Ví dụ cho tương lai (cho User)
+        SYSTEM_ALERT("Cảnh báo hệ thống (Admin)"),
+        BOOK_STOCK_LOW_ADMIN("Sách sắp hết trong kho"); // Ví dụ cho Admin
+
+        private final String displayName;
+
+        NotificationType(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        @Override
+        public String toString() {
+            return this.displayName; // Giúp hiển thị tên thân thiện khi gọi toString()
+        }
     }
 
     private String id;
-    private String userId; // Có thể là null nếu là thông báo hệ thống cho admin
+    private String userId; // ID của người nhận (có thể là user ID, hoặc "ADMIN" nếu cho admin)
     private String message;
     private NotificationType type;
     private boolean isRead;
     private LocalDateTime createdAt;
-    private String relatedItemId;
-    private String actionLink;
+    private String relatedItemId; // ID của đối tượng liên quan (ví dụ: bookId, requestId)
+    private String actionLink;    // Một chuỗi định danh hành động (ví dụ: "VIEW_BOOK_DETAIL")
 
-    // Constructor khi tạo mới (userId có thể null cho thông báo hệ thống/admin)
+    private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
+
+    // Constructor khi tạo mới
     public Notification(String userId, String message, NotificationType type, String relatedItemId, String actionLink) {
-        this.id = UUID.randomUUID().toString();
-        this.userId = userId; // userId của người nhận, hoặc null/special ID cho admin
+        this.id = "NOTIF-" + UUID.randomUUID().toString().substring(0, 10).toUpperCase(); // Tạo ID có tiền tố
+        this.userId = userId;
         this.message = message;
         this.type = type;
         this.isRead = false;
@@ -67,7 +86,7 @@ public class Notification {
         this.actionLink = actionLink;
     }
 
-    // Getters and Setters
+    // Getters
     public String getId() { return id; }
     public String getUserId() { return userId; }
     public String getMessage() { return message; }
@@ -76,11 +95,25 @@ public class Notification {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public String getRelatedItemId() { return relatedItemId; }
     public String getActionLink() { return actionLink; }
+
+    // Setters
     public void setRead(boolean read) { isRead = read; }
-    // Các trường khác thường không thay đổi sau khi tạo
+    // Các trường id, userId, message, type, createdAt, relatedItemId, actionLink thường không thay đổi sau khi tạo.
+    // Nếu cần thay đổi, bạn có thể thêm setters cho chúng.
 
     public String getFormattedCreatedAt() {
-        if (createdAt == null) return "";
-        return createdAt.format(DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"));
+        if (createdAt == null) return "N/A";
+        return createdAt.format(DATETIME_FORMATTER);
+    }
+
+    @Override
+    public String toString() {
+        return "Notification{" +
+                "id='" + id + '\'' +
+                ", userId='" + userId + '\'' +
+                ", type=" + (type != null ? type.getDisplayName() : "null") +
+                ", message='" + message + '\'' +
+                ", isRead=" + isRead +
+                '}';
     }
 }

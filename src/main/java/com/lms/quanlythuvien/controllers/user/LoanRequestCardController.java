@@ -20,26 +20,30 @@ import javafx.scene.layout.VBox; // Cho root card
 
 import java.io.InputStream;
 import java.net.URL;
+import java.time.LocalDate; // Thêm nếu chưa có
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
 public class LoanRequestCardController {
 
-    @FXML private VBox loanRequestCardRoot; // fx:id cho root card
+    @FXML private VBox loanRequestCardRoot;
     @FXML private ImageView bookCoverImageView;
     @FXML private Label bookTitleLabel;
     @FXML private Label authorsLabel;
     @FXML private Label requestStatusLabel;
     @FXML private Label requestDateLabel;
-    @FXML private Label pickupDueDateLabel; // Ngày hết hạn lấy sách
-    @FXML private Label adminNotesLabel;    // Ghi chú của admin khi từ chối/duyệt
+    @FXML private Label pickupDueDateLabel;
+    @FXML private Label adminNotesLabel;
     @FXML private Button cancelRequestButton;
 
     private BorrowingRequest currentRequest;
     private Book requestedBook;
-    private MyBookshelfController parentShelfController; // Sửa tên cho nhất quán
+    private MyBookshelfController parentShelfController;
     private Image defaultBookCoverImage;
-    private final DateTimeFormatter displayDateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+    // --- SỬA LỖI Ở ĐÂY ---
+    private final DateTimeFormatter displayDateOnlyFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    // --- KẾT THÚC SỬA LỖI ---
 
 
     public LoanRequestCardController() {
@@ -56,20 +60,31 @@ public class LoanRequestCardController {
 
     public void setData(BorrowingRequest request, Book book, MyBookshelfController parentController) {
         this.currentRequest = request;
-        this.requestedBook = book; // Có thể null nếu sách không tìm thấy qua ISBN
+        this.requestedBook = book;
         this.parentShelfController = parentController;
+
+        if (request == null) { // Thêm kiểm tra null cho request
+            System.err.println("ERROR_LOAN_REQ_CARD:setData: BorrowingRequest is null.");
+            // Có thể ẩn card hoặc hiển thị thông báo lỗi
+            if(loanRequestCardRoot != null) loanRequestCardRoot.setVisible(false);
+            return;
+        }
 
         if (book != null) {
             bookTitleLabel.setText(book.getTitleOrDefault("N/A"));
             authorsLabel.setText(book.getAuthorsFormatted("N/A"));
             loadCoverImageUI(book.getThumbnailUrl());
         } else {
-            bookTitleLabel.setText("Sách không còn trong thư viện (ISBN: " + request.getBookIsbn13() + ")");
-            authorsLabel.setText("Vui lòng hủy yêu cầu này.");
-            bookCoverImageView.setImage(defaultBookCoverImage);
+            bookTitleLabel.setText((request.getBookIsbn13() != null) ? "Sách (ISBN: " + request.getBookIsbn13() + ") không còn hoặc không tìm thấy." : "Thông tin sách không rõ");
+            authorsLabel.setText("Vui lòng kiểm tra hoặc hủy yêu cầu này.");
+            if(bookCoverImageView != null) bookCoverImageView.setImage(defaultBookCoverImage);
         }
 
-        requestDateLabel.setText("Yêu cầu lúc: " + request.getRequestDate().format(displayDateFormatter));
+        if (request.getRequestDate() != null) {
+            requestDateLabel.setText("Yêu cầu lúc: " + request.getRequestDate().format(displayDateOnlyFormatter)); // Sử dụng formatter mới
+        } else {
+            requestDateLabel.setText("Yêu cầu lúc: N/A");
+        }
         updateStatusDisplayAndControls();
     }
 
@@ -96,57 +111,68 @@ public class LoanRequestCardController {
     private void updateStatusDisplayAndControls() {
         if (currentRequest == null || requestStatusLabel == null) return;
 
-        requestStatusLabel.getStyleClass().removeAll("status-pending", "status-approved", "status-rejected", "status-completed", "status-canceled-user", "status-expired");
-        String statusText = currentRequest.getStatus().name(); // Mặc định
+        // Đảm bảo BorrowingRequest.RequestStatus có getDisplayName()
+        BorrowingRequest.RequestStatus currentStatus = currentRequest.getStatus();
+        String statusText = (currentStatus != null) ? currentStatus.getDisplayName() : "Không rõ";
 
-        switch (currentRequest.getStatus()) {
-            case PENDING:
-                statusText = "CHỜ DUYỆT";
-                requestStatusLabel.getStyleClass().add("status-pending");
-                break;
-            case APPROVED:
-                statusText = "ĐÃ DUYỆT";
-                requestStatusLabel.getStyleClass().add("status-approved");
-                break;
-            case REJECTED:
-                statusText = "BỊ TỪ CHỐI";
-                requestStatusLabel.getStyleClass().add("status-rejected");
-                break;
-            case CANCELED_BY_USER:
-                statusText = "ĐÃ HỦY";
-                requestStatusLabel.getStyleClass().add("status-canceled-user");
-                break;
-            case COMPLETED:
-                statusText = "ĐÃ MƯỢN";
-                requestStatusLabel.getStyleClass().add("status-completed");
-                break;
-            case EXPIRED:
-                statusText = "HẾT HẠN LẤY";
-                requestStatusLabel.getStyleClass().add("status-expired");
-                break;
+        requestStatusLabel.getStyleClass().clear(); // Xóa hết style cũ
+        requestStatusLabel.getStyleClass().add("status-label"); // Thêm class chung
+
+        if (currentStatus != null) {
+            switch (currentStatus) {
+                case PENDING:
+                    requestStatusLabel.getStyleClass().add("status-pending");
+                    break;
+                case APPROVED:
+                    requestStatusLabel.getStyleClass().add("status-approved");
+                    break;
+                case REJECTED:
+                    requestStatusLabel.getStyleClass().add("status-rejected");
+                    break;
+                case CANCELED_BY_USER:
+                    requestStatusLabel.getStyleClass().add("status-canceled-user");
+                    break;
+                case COMPLETED:
+                    requestStatusLabel.getStyleClass().add("status-completed");
+                    break;
+                case EXPIRED:
+                    requestStatusLabel.getStyleClass().add("status-expired");
+                    break;
+                default:
+                    requestStatusLabel.getStyleClass().add("status-unknown"); // Thêm class cho trạng thái không xác định
+                    break;
+            }
+        } else {
+            requestStatusLabel.getStyleClass().add("status-unknown");
         }
-        requestStatusLabel.setText(statusText);
+        requestStatusLabel.setText(statusText.toUpperCase());
 
-        // Hiển thị ghi chú admin nếu có và trạng thái là REJECTED hoặc APPROVED
-        boolean showAdminNotes = (currentRequest.getStatus() == BorrowingRequest.RequestStatus.REJECTED ||
-                currentRequest.getStatus() == BorrowingRequest.RequestStatus.APPROVED) &&
+
+        boolean showAdminNotes = (currentStatus == BorrowingRequest.RequestStatus.REJECTED ||
+                currentStatus == BorrowingRequest.RequestStatus.APPROVED) &&
                 currentRequest.getAdminNotes() != null &&
                 !currentRequest.getAdminNotes().trim().isEmpty();
-        adminNotesLabel.setText("Admin: " + (showAdminNotes ? currentRequest.getAdminNotes() : ""));
-        adminNotesLabel.setVisible(showAdminNotes);
-        adminNotesLabel.setManaged(showAdminNotes);
 
-        // Hiển thị hạn lấy sách nếu APPROVED
-        boolean showPickupDue = currentRequest.getStatus() == BorrowingRequest.RequestStatus.APPROVED &&
+        if (adminNotesLabel != null) {
+            adminNotesLabel.setText("Admin: " + (showAdminNotes ? currentRequest.getAdminNotes() : ""));
+            adminNotesLabel.setVisible(showAdminNotes);
+            adminNotesLabel.setManaged(showAdminNotes);
+        }
+
+
+        boolean showPickupDue = currentStatus == BorrowingRequest.RequestStatus.APPROVED &&
                 currentRequest.getPickupDueDate() != null;
-        pickupDueDateLabel.setText("Hạn lấy sách: " + (showPickupDue ? currentRequest.getPickupDueDate().format(displayDateFormatter) : ""));
-        pickupDueDateLabel.setVisible(showPickupDue);
-        pickupDueDateLabel.setManaged(showPickupDue);
+        if (pickupDueDateLabel != null) {
+            pickupDueDateLabel.setText("Hạn lấy sách: " + (showPickupDue ? currentRequest.getPickupDueDate().format(displayDateOnlyFormatter) : "")); // Sử dụng formatter mới
+            pickupDueDateLabel.setVisible(showPickupDue);
+            pickupDueDateLabel.setManaged(showPickupDue);
+        }
 
-        // Nút hủy chỉ hiển thị khi trạng thái là PENDING
-        boolean canCancel = currentRequest.getStatus() == BorrowingRequest.RequestStatus.PENDING;
-        cancelRequestButton.setVisible(canCancel);
-        cancelRequestButton.setManaged(canCancel);
+        boolean canCancel = currentStatus == BorrowingRequest.RequestStatus.PENDING;
+        if (cancelRequestButton != null) {
+            cancelRequestButton.setVisible(canCancel);
+            cancelRequestButton.setManaged(canCancel);
+        }
     }
 
 
@@ -167,14 +193,12 @@ public class LoanRequestCardController {
         Optional<ButtonType> result = confirmation.showAndWait();
 
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            // Service nên chỉ cần requestId và userId của người hủy (là currentUser)
             boolean success = BorrowingRequestService.getInstance().cancelRequestByUser(currentRequest.getRequestId(), currentRequest.getUserId());
             if (success) {
                 showAlert(Alert.AlertType.INFORMATION, "Thành Công", "Đã hủy yêu cầu mượn sách.");
                 parentShelfController.refreshCurrentTabData();
             } else {
                 showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể hủy yêu cầu. Vui lòng thử lại sau.");
-                // Có thể yêu cầu đã được xử lý bởi admin, refresh lại để chắc chắn
                 parentShelfController.refreshCurrentTabData();
             }
         }
@@ -183,11 +207,9 @@ public class LoanRequestCardController {
     @FXML
     void handleCardClicked(MouseEvent event) {
         if (requestedBook != null && parentShelfController != null) {
-            // Điều hướng đến chi tiết sách, tương tự như các card sách khác
             parentShelfController.navigateToBookDetail(requestedBook);
         } else if (currentRequest != null) {
             System.out.println("INFO_LOAN_REQ_CARD_CLICK: Clicked on request for ISBN " + currentRequest.getBookIsbn13() + " but book details are not available.");
-            // Có thể hiển thị thông báo sách không còn hoặc không thể xem chi tiết
         }
     }
 

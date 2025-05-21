@@ -5,13 +5,31 @@ import java.util.UUID;
 
 public class DonationRequest {
 
+    // --- SỬA ĐỔI ENUM DONATIONSTATUS Ở ĐÂY ---
     public enum DonationStatus {
-        PENDING_APPROVAL,
-        APPROVED_PENDING_RECEIPT,
-        COMPLETED,
-        REJECTED,
-        CANCELED_BY_USER
+        PENDING_APPROVAL("Đang chờ duyệt"),
+        APPROVED_PENDING_RECEIPT("Đã duyệt (Chờ nhận sách)"),
+        COMPLETED("Đã hoàn tất (Thư viện đã nhận)"),
+        REJECTED("Bị từ chối"),
+        CANCELED_BY_USER("Người dùng hủy");
+        // Bạn có thể thêm các trạng thái khác nếu cần
+
+        private final String displayName;
+
+        DonationStatus(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        @Override
+        public String toString() {
+            return this.displayName; // Giúp hiển thị tên thân thiện khi gọi toString()
+        }
     }
+    // --- KẾT THÚC SỬA ĐỔI ENUM ---
 
     private String requestId;
     private String userId;
@@ -21,14 +39,14 @@ public class DonationRequest {
     private String language;
     private String reasonForContribution;
     private LocalDate requestDate;
-    private DonationStatus status;
+    private DonationStatus status; // Sử dụng Enum DonationStatus đã cập nhật
     private String adminNotes;
-    private LocalDate resolvedDate;
-    private LocalDate actualReceiptDate;
+    private LocalDate resolvedDate; // Ngày admin xử lý yêu cầu
+    private LocalDate actualReceiptDate; // Ngày thư viện thực sự nhận sách
 
     // Constructor khi người dùng tạo yêu cầu mới
     public DonationRequest(String userId, String bookName, String authorName, String category, String language, String reason) {
-        this.requestId = UUID.randomUUID().toString();
+        this.requestId = "DON_REQ_" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(); // Ví dụ tạo ID dễ nhìn hơn
         this.userId = userId;
         this.bookName = bookName;
         this.authorName = authorName;
@@ -36,7 +54,7 @@ public class DonationRequest {
         this.language = language;
         this.reasonForContribution = reason;
         this.requestDate = LocalDate.now();
-        this.status = DonationStatus.PENDING_APPROVAL;
+        this.status = DonationStatus.PENDING_APPROVAL; // Trạng thái mặc định khi mới tạo
     }
 
     // Constructor đầy đủ (khi load từ DB)
@@ -73,6 +91,9 @@ public class DonationRequest {
     public LocalDate getActualReceiptDate() { return actualReceiptDate; }
 
     // Setters
+    // requestId, userId, bookName, authorName, category, language, reasonForContribution, requestDate
+    // thường không thay đổi sau khi tạo yêu cầu ban đầu.
+    // Các trường có thể thay đổi là status, adminNotes, resolvedDate, actualReceiptDate.
     public void setStatus(DonationStatus status) { this.status = status; }
     public void setAdminNotes(String adminNotes) { this.adminNotes = adminNotes; }
     public void setResolvedDate(LocalDate resolvedDate) { this.resolvedDate = resolvedDate; }
@@ -80,6 +101,11 @@ public class DonationRequest {
 
     @Override
     public String toString() {
-        return "'" + bookName + "' bởi " + authorName + " (Ngày: " + requestDate + ", TT: " + status + ")";
+        return "DonationRequest{" +
+                "requestId='" + requestId + '\'' +
+                ", bookName='" + bookName + '\'' +
+                ", userId='" + userId + '\'' +
+                ", status=" + (status != null ? status.getDisplayName() : "null") + // Sử dụng getDisplayName
+                '}';
     }
 }

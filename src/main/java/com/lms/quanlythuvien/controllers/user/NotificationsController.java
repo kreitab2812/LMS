@@ -1,10 +1,9 @@
 package com.lms.quanlythuvien.controllers.user;
 
-import com.lms.quanlythuvien.MainApp;
-import com.lms.quanlythuvien.models.item.Book; // <<< THÊM IMPORT
+import com.lms.quanlythuvien.models.item.Book;
 import com.lms.quanlythuvien.models.system.Notification;
 import com.lms.quanlythuvien.models.user.User;
-import com.lms.quanlythuvien.services.library.BookManagementService; // <<< THÊM IMPORT
+import com.lms.quanlythuvien.services.library.BookManagementService;
 import com.lms.quanlythuvien.services.system.NotificationService;
 import com.lms.quanlythuvien.utils.session.SessionManager;
 
@@ -18,12 +17,12 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.net.URL;
+import java.util.ArrayList; // <<< ĐÃ THÊM IMPORT
 import java.util.List;
-import java.util.Optional; // <<< THÊM IMPORT
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 public class NotificationsController implements Initializable {
@@ -41,26 +40,41 @@ public class NotificationsController implements Initializable {
 
     public void setDashboardController(UserDashboardController dashboardController) {
         this.dashboardController = dashboardController;
-        // Cập nhật badge ngay khi controller này được dashboard chuẩn bị
         updateUnreadCountInSidebar();
     }
 
     public NotificationsController() {
         notificationService = NotificationService.getInstance();
-        currentUser = SessionManager.getInstance().getCurrentUser();
         observableNotificationList = FXCollections.observableArrayList();
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        this.currentUser = SessionManager.getInstance().getCurrentUser();
+
         notificationsListView.setItems(observableNotificationList);
         setupNotificationCellFactory();
 
         if (currentUser != null) {
             loadNotifications();
+            disableActionButtons(false);
         } else {
             notificationsListView.setPlaceholder(new Label("Vui lòng đăng nhập để xem thông báo."));
             disableActionButtons(true);
+        }
+    }
+
+    public void onViewActivated() {
+        System.out.println("DEBUG_UserNotifications: View Activated.");
+        this.currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            loadNotifications();
+            disableActionButtons(false);
+        } else {
+            observableNotificationList.clear();
+            notificationsListView.setPlaceholder(new Label("Vui lòng đăng nhập để xem thông báo."));
+            disableActionButtons(true);
+            updateUnreadCountInSidebar(); // Cập nhật lại badge
         }
     }
 
@@ -72,18 +86,30 @@ public class NotificationsController implements Initializable {
 
     private void loadNotifications() {
         if (currentUser == null) {
+            System.out.println("DEBUG_UserNotifications: Cannot load notifications, current user is null.");
             observableNotificationList.clear();
             notificationsListView.setPlaceholder(new Label("Vui lòng đăng nhập."));
             disableActionButtons(true);
+            updateUnreadCountInSidebar();
             return;
         }
         disableActionButtons(false);
-        List<Notification> userNotifications = notificationService.getNotificationsForUser(currentUser.getUserId(), false); // Lấy cả đã đọc và chưa đọc
-        observableNotificationList.setAll(userNotifications); // setAll sẽ tự động refresh ListView
+        System.out.println("DEBUG_UserNotifications: Loading notifications for user: " + currentUser.getUserId());
+        List<Notification> userNotifications = notificationService.getNotificationsForUser(currentUser.getUserId(), false);
+
+        if (userNotifications == null) {
+            System.err.println("ERROR_UserNotifications: Notification service returned null list for user: " + currentUser.getUserId());
+            userNotifications = new ArrayList<>(); // Khởi tạo list rỗng để tránh NullPointerException
+        }
+
+        observableNotificationList.setAll(userNotifications);
 
         if (userNotifications.isEmpty()) {
             notificationsListView.setPlaceholder(new Label("Bạn không có thông báo nào."));
+        } else {
+            notificationsListView.setPlaceholder(null);
         }
+        System.out.println("DEBUG_UserNotifications: Loaded " + userNotifications.size() + " notifications.");
         updateUnreadCountInSidebar();
     }
 
@@ -94,8 +120,6 @@ public class NotificationsController implements Initializable {
             private final VBox textContainer = new VBox(3);
             private final Label messageLabel = new Label();
             private final Label timestampLabel = new Label();
-            // private final Region spacer = new Region(); // Có thể không cần spacer nếu không có nút action riêng trong cell
-            // private final Button actionButton = new Button();
 
             {
                 emojiIconLabel.setMinWidth(25);
@@ -111,13 +135,9 @@ public class NotificationsController implements Initializable {
                 HBox.setHgrow(textContainer, Priority.ALWAYS);
                 textContainer.getChildren().addAll(messageLabel, timestampLabel);
 
-                // HBox.setHgrow(spacer, Priority.ALWAYS);
-                // actionButton.setVisible(false); // Mặc định ẩn nút action
-                // actionButton.getStyleClass().add("secondary-button-small");
-
-                hbox.getChildren().addAll(emojiIconLabel, textContainer /*, spacer, actionButton*/);
+                hbox.getChildren().addAll(emojiIconLabel, textContainer);
                 hbox.setAlignment(Pos.CENTER_LEFT);
-                hbox.setPadding(new Insets(10));
+                hbox.setPadding(new Insets(10, 15, 10, 15));
                 hbox.getStyleClass().add("notification-cell-hbox");
 
                 this.setOnMouseClicked(event -> {
@@ -126,15 +146,10 @@ public class NotificationsController implements Initializable {
                         if (!item.isRead()) {
                             if (notificationService.markAsRead(item.getId())) {
                                 item.setRead(true);
-                                updateItemStyleBasedOnReadStatus(item); // Chỉ cập nhật style
-                                // Giảm số lượng badge ngay lập tức thay vì load lại toàn bộ list
+                                updateItemStyleBasedOnReadStatus(item);
                                 updateUnreadCountInSidebar();
-                                // Không cần gọi updateItem(item, false) vì thuộc tính isRead của item đã thay đổi,
-                                // và nếu cell được tái sử dụng, updateItem sẽ được gọi.
-                                // Hoặc có thể gọi this.getListView().refresh() để làm mới toàn bộ listview.
                             }
                         }
-                        // Xử lý actionLink
                         if (item.getActionLink() != null && !item.getActionLink().isEmpty()) {
                             handleNotificationAction(item);
                         }
@@ -156,19 +171,28 @@ public class NotificationsController implements Initializable {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setGraphic(null);
+                    getStyleClass().removeAll("notification-cell-unread", "notification-cell-read");
                 } else {
                     messageLabel.setText(item.getMessage());
-                    timestampLabel.setText(item.getFormattedCreatedAt());
-                    String emoji = "🔔"; // Default
-                    switch (item.getType()) {
-                        case INFO: emoji = "ℹ️"; break;
-                        case SUCCESS: case LOAN_APPROVED_USER: emoji = "✅"; break;
-                        case WARNING: case LOAN_DUE_SOON_USER: emoji = "⚠️"; break;
-                        case ERROR: case LOAN_REJECTED_USER: emoji = "❌"; break;
-                        case USER_YoutubeED: emoji = "💬"; break;
-                        case DONATION_PROCESSED_USER: emoji = "🎁"; break;
-                        // Thêm các NotificationType khác của User ở đây
-                        default: emoji = "🔔";
+                    timestampLabel.setText(item.getFormattedCreatedAt()); // Sử dụng phương thức từ model
+
+                    String emoji = "🔔";
+                    Notification.NotificationType type = item.getType();
+                    if (type != null) {
+                        switch (type) {
+                            case INFO: emoji = "ℹ️"; break;
+                            case SUCCESS:
+                            case LOAN_APPROVED_USER: emoji = "✅"; break;
+                            case WARNING:
+                            case LOAN_DUE_SOON_USER: emoji = "⚠️"; break;
+                            case ERROR:
+                            case LOAN_REJECTED_USER: emoji = "❌"; break;
+                            case USER_YoutubeED: emoji = "💬"; break; // Đã sửa từ USER_YoutubeED
+                            case DONATION_PROCESSED_USER: emoji = "🎁"; break;
+                            case ACCOUNT_LOCKED_USER: emoji = "🔒"; break;
+                            case FINE_ISSUED_USER: emoji = "💰"; break;
+                            default: emoji = "🔔";
+                        }
                     }
                     emojiIconLabel.setText(emoji);
                     updateItemStyleBasedOnReadStatus(item);
@@ -179,67 +203,66 @@ public class NotificationsController implements Initializable {
     }
 
     private void handleNotificationAction(Notification notification) {
-        if (dashboardController == null || notification.getActionLink() == null) return;
+        if (dashboardController == null || notification.getActionLink() == null) {
+            System.err.println("ERROR_UserNotifications_Action: DashboardController is null or actionLink is null for notification ID: " + notification.getId());
+            return;
+        }
 
-        String action = notification.getActionLink().toUpperCase(); // Viết hoa để so sánh dễ hơn
+        String action = notification.getActionLink().toUpperCase();
         String relatedId = notification.getRelatedItemId();
 
-        System.out.println("INFO_NOTIF_ACTION: Handling action: " + action + ", RelatedID: " + relatedId);
+        System.out.println("INFO_UserNotifications_Action: Handling action: " + action + ", RelatedID: " + relatedId);
 
         switch (action) {
             case "VIEW_BOOK_DETAIL":
                 if (relatedId != null && !relatedId.isEmpty()) {
-                    // Book ID có thể là ISBN hoặc internalId. Ưu tiên tìm theo ISBN trước.
                     Optional<Book> bookOpt = BookManagementService.getInstance().findBookByIsbn13InLibrary(relatedId);
-                    if (bookOpt.isEmpty() && relatedId.matches("\\d+")) { // Nếu không phải ISBN và là số, thử tìm bằng internalId
+                    if (bookOpt.isEmpty() && relatedId.matches("\\d+")) {
                         try {
                             bookOpt = BookManagementService.getInstance().findBookByInternalId(Integer.parseInt(relatedId));
                         } catch (NumberFormatException e) {
-                            System.err.println("ERROR_NOTIF_ACTION: relatedId " + relatedId + " is not a valid integer for internalId.");
+                            System.err.println("ERROR_UserNotifications_Action: relatedId " + relatedId + " is not a valid integer for internalId.");
                         }
                     }
 
-                    if (bookOpt.isPresent()) { // Sửa: dùng isPresent()
-                        SessionManager.getInstance().setSelectedBook(bookOpt.get()); // Sửa: dùng get()
+                    if (bookOpt.isPresent()) {
+                        SessionManager.getInstance().setSelectedBook(bookOpt.get());
                         dashboardController.loadViewIntoCenter("user/BookDetailView.fxml");
                     } else {
-                        showAlert(Alert.AlertType.WARNING, "Không Tìm Thấy", "Không tìm thấy sách liên quan (ID/ISBN: " + relatedId + "). Sách có thể đã bị xóa.");
+                        showAlert(Alert.AlertType.WARNING, "Không Tìm Thấy", "Không tìm thấy sách liên quan (ID/ISBN: " + relatedId + ").");
                     }
                 } else {
                     showAlert(Alert.AlertType.WARNING, "Thiếu Thông Tin", "Thông báo này không có ID sách liên quan.");
                 }
                 break;
             case "VIEW_MY_LOANS":
-                dashboardController.loadViewIntoCenter("MyBookshelfView.fxml");
-                SessionManager.getInstance().setTargetMyBookshelfTab("BORROWED_TAB_ID"); // Cần định nghĩa ID cho tab
+                dashboardController.navigateToMyBookshelf("borrowed"); // Sử dụng định danh tab
                 break;
             case "VIEW_MY_REQUESTS":
-                dashboardController.loadViewIntoCenter("MyBookshelfView.fxml");
-                SessionManager.getInstance().setTargetMyBookshelfTab("REQUESTS_TAB_ID");
+                dashboardController.navigateToMyBookshelf("requests"); // Sử dụng định danh tab
                 break;
-            // Thêm các case khác
             default:
-                System.out.println("INFO_NOTIF_ACTION: No specific handler for action: " + action);
+                System.out.println("INFO_UserNotifications_Action: No specific handler for action: " + action);
                 break;
         }
     }
 
-
     @FXML
     void handleRefreshNotifications(ActionEvent event) {
+        System.out.println("DEBUG_UserNotifications: Refresh button clicked.");
         if (currentUser != null) loadNotifications();
-        else showAlert(Alert.AlertType.WARNING, "Lỗi", "Vui lòng đăng nhập.");
+        else showAlert(Alert.AlertType.WARNING, "Lỗi", "Vui lòng đăng nhập để làm mới thông báo.");
     }
 
     @FXML
     void handleMarkAllAsRead(ActionEvent event) {
         if (currentUser != null) {
-            if (notificationService.markAllAsRead(currentUser.getUserId())) { // markAllAsRead giờ trả về boolean
+            if (notificationService.markAllAsRead(currentUser.getUserId())) {
                 showAlert(Alert.AlertType.INFORMATION, "Hoàn tất", "Tất cả thông báo đã được đánh dấu đã đọc.");
+                loadNotifications();
             } else {
-                showAlert(Alert.AlertType.INFORMATION, "Thông báo", "Không có thông báo mới nào để đánh dấu.");
+                showAlert(Alert.AlertType.INFORMATION, "Thông báo", "Không có thông báo mới nào hoặc không thể thực hiện.");
             }
-            loadNotifications(); // Luôn tải lại
         } else {
             showAlert(Alert.AlertType.WARNING, "Lỗi", "Vui lòng đăng nhập.");
         }
@@ -248,17 +271,19 @@ public class NotificationsController implements Initializable {
     @FXML
     void handleDeleteReadNotificationsAction(ActionEvent event) {
         if (currentUser != null) {
-            Alert confirmDialog = new Alert(Alert.AlertType.CONFIRMATION, "Xóa tất cả thông báo đã đọc?", ButtonType.YES, ButtonType.NO);
-            confirmDialog.setTitle("Xác nhận Xóa");
+            Alert confirmDialog = new Alert(Alert.AlertType.CONFIRMATION,
+                    "Bạn có chắc chắn muốn xóa tất cả thông báo ĐÃ ĐỌC không?",
+                    ButtonType.YES, ButtonType.NO);
+            confirmDialog.setTitle("Xác Nhận Xóa");
             confirmDialog.setHeaderText(null);
-            applyDialogStyles(confirmDialog);
+            if (confirmDialog.getDialogPane() != null) applyDialogStyles(confirmDialog.getDialogPane());
             Optional<ButtonType> result = confirmDialog.showAndWait();
 
-            if (result.isPresent() && result.get() == ButtonType.YES) { // Sửa: dùng isPresent() và get()
+            if (result.isPresent() && result.get() == ButtonType.YES) {
                 if (notificationService.deleteReadNotifications(currentUser.getUserId())) {
                     showAlert(Alert.AlertType.INFORMATION, "Hoàn tất", "Đã xóa các thông báo đã đọc.");
                 } else {
-                    showAlert(Alert.AlertType.INFORMATION, "Thông báo", "Không có thông báo đã đọc nào để xóa.");
+                    showAlert(Alert.AlertType.INFORMATION, "Thông báo", "Không có thông báo đã đọc nào để xóa hoặc có lỗi xảy ra.");
                 }
                 loadNotifications();
             }
@@ -268,9 +293,13 @@ public class NotificationsController implements Initializable {
     }
 
     private void updateUnreadCountInSidebar() {
-        if (currentUser != null && dashboardController != null) {
+        if (dashboardController != null && currentUser != null) { // Đảm bảo currentUser cũng không null
             int unreadCount = notificationService.getUnreadNotificationCount(currentUser.getUserId());
-            dashboardController.updateNotificationBadgeOnSidebar(unreadCount); // Gọi hàm đã thêm ở UserDashboardController
+            System.out.println("DEBUG_UserNotifications: Updating unread count for sidebar: " + unreadCount);
+            dashboardController.updateNotificationBadgeOnSidebar(unreadCount);
+        } else {
+            System.out.println("DEBUG_UserNotifications: Cannot update unread count, currentUser or dashboardController is null.");
+            if(dashboardController != null) dashboardController.updateNotificationBadgeOnSidebar(0);
         }
     }
 
@@ -279,14 +308,22 @@ public class NotificationsController implements Initializable {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
-        applyDialogStyles(alert);
+        if (alert.getDialogPane() != null) {
+            applyDialogStyles(alert.getDialogPane());
+        }
         alert.showAndWait();
     }
 
-    private void applyDialogStyles(Dialog<?> dialog) {
+    private void applyDialogStyles(DialogPane dialogPane) {
         try {
             URL cssUrl = getClass().getResource("/com/lms/quanlythuvien/css/styles.css");
-            if (cssUrl != null) dialog.getDialogPane().getStylesheets().add(cssUrl.toExternalForm());
-        } catch (Exception e) { System.err.println("WARN_DIALOG_CSS: Failed to load CSS for dialog: " + e.getMessage()); }
+            if (cssUrl != null) {
+                dialogPane.getStylesheets().add(cssUrl.toExternalForm());
+            } else {
+                System.err.println("WARN_UserNotifications_DIALOG_CSS: CSS file not found for dialogs.");
+            }
+        } catch (Exception e) {
+            System.err.println("WARN_UserNotifications_DIALOG_CSS: Failed to load CSS for dialog: " + e.getMessage());
+        }
     }
 }

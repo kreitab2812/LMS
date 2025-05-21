@@ -2,7 +2,7 @@ package com.lms.quanlythuvien.services.transaction;
 
 import com.lms.quanlythuvien.models.transaction.BorrowingRecord;
 import com.lms.quanlythuvien.models.transaction.LoanStatus;
-import com.lms.quanlythuvien.services.library.BookManagementService; // Đảm bảo import đúng
+import com.lms.quanlythuvien.services.library.BookManagementService;
 import com.lms.quanlythuvien.utils.database.DatabaseManager;
 
 import java.sql.*;
@@ -15,7 +15,7 @@ import java.util.Optional;
 public class BorrowingRecordService {
 
     private static BorrowingRecordService instance;
-    private final BookManagementService bookManagementService; // Sử dụng final
+    private final BookManagementService bookManagementService;
     private static final DateTimeFormatter DB_DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
     private BorrowingRecordService() {
@@ -43,178 +43,182 @@ public class BorrowingRecordService {
         );
     }
 
+    // PHIÊN BẢN CŨ: Tự quản lý transaction (dùng cho mượn thủ công chẳng hạn)
     public Optional<BorrowingRecord> createLoan(String bookIsbn13, String userId, LocalDate borrowDate, LocalDate dueDate) {
-        if (bookIsbn13 == null || userId == null || borrowDate == null || dueDate == null) {
-            System.err.println("ERROR_BRS_CREATE_LOAN: Invalid parameters for creating a loan.");
+        Connection conn = null;
+        try {
+            conn = DatabaseManager.getInstance().getConnection();
+            conn.setAutoCommit(false); // Bắt đầu transaction ở đây
+
+            Optional<BorrowingRecord> recordOpt = createLoanLogic(conn, bookIsbn13, userId, borrowDate, dueDate);
+
+            if (recordOpt.isPresent()) {
+                conn.commit(); // Commit nếu logic bên trong thành công
+                return recordOpt;
+            } else {
+                conn.rollback(); // Rollback nếu logic bên trong thất bại
+                return Optional.empty();
+            }
+        } catch (SQLException e) {
+            System.err.println("ERROR_BRS_CREATE_LOAN (standalone): SQLException occurred: " + e.getMessage());
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException exRollback) {
+                    System.err.println("ERROR_BRS_CREATE_LOAN_ROLLBACK_EX (standalone): " + exRollback.getMessage());
+                }
+            }
             return Optional.empty();
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException exClose) {
+                    System.err.println("ERROR_BRS_CREATE_LOAN_CLOSE_EX (standalone): " + exClose.getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * Logic cốt lõi để tạo một lượt mượn, sử dụng một Connection đã có.
+     * Phương thức này KHÔNG quản lý commit/rollback/close connection.
+     * Được gọi bởi createLoan() (phiên bản tự quản lý transaction) hoặc từ service khác (như BorrowingRequestService).
+     */
+    public Optional<BorrowingRecord> createLoanLogic(Connection conn, String bookIsbn13, String userId, LocalDate borrowDate, LocalDate dueDate) throws SQLException {
+        if (bookIsbn13 == null || userId == null || borrowDate == null || dueDate == null) {
+            System.err.println("ERROR_BRS_CREATE_LOAN_LOGIC: Invalid parameters.");
+            return Optional.empty(); // Hoặc ném IllegalArgumentException
         }
         if (borrowDate.isAfter(dueDate)) {
-            System.err.println("ERROR_BRS_CREATE_LOAN: Borrow date cannot be after due date.");
+            System.err.println("ERROR_BRS_CREATE_LOAN_LOGIC: Borrow date after due date.");
             return Optional.empty();
         }
 
         Optional<Integer> bookInternalIdOpt = bookManagementService.findInternalIdByIsbn13(bookIsbn13);
         if (bookInternalIdOpt.isEmpty()) {
-            System.err.println("ERROR_BRS_CREATE_LOAN: Book with ISBN-13 " + bookIsbn13 + " not found.");
+            System.err.println("ERROR_BRS_CREATE_LOAN_LOGIC: Book with ISBN-13 " + bookIsbn13 + " not found.");
             return Optional.empty();
         }
         int bookInternalId = bookInternalIdOpt.get();
 
         String checkExistingSql = "SELECT COUNT(*) AS count FROM BorrowingRecords " +
                 "WHERE bookInternalId = ? AND userId = ? AND status IN (?, ?)";
-        String insertSql = "INSERT INTO BorrowingRecords (bookInternalId, userId, borrowDate, dueDate, status) VALUES (?, ?, ?, ?, ?)";
-        Connection conn = null;
+        try (PreparedStatement checkPstmt = conn.prepareStatement(checkExistingSql)) {
+            checkPstmt.setInt(1, bookInternalId);
+            checkPstmt.setString(2, userId);
+            checkPstmt.setString(3, LoanStatus.ACTIVE.name());
+            checkPstmt.setString(4, LoanStatus.OVERDUE.name());
+            try (ResultSet rs = checkPstmt.executeQuery()) {
+                if (rs.next() && rs.getInt("count") > 0) {
+                    System.err.println("ERROR_BRS_CREATE_LOAN_LOGIC: User " + userId + " is already actively borrowing book internalId " + bookInternalId);
+                    // Không rollback ở đây, để service gọi quyết định
+                    return Optional.empty();
+                }
+            }
+        }
 
+        // Giảm số lượng sách (sử dụng Connection được truyền vào)
+        if (!bookManagementService.handleBookBorrowedByInternalId(conn, bookInternalId)) {
+            System.err.println("ERROR_BRS_CREATE_LOAN_LOGIC: Failed to update book available quantity for internalId " + bookInternalId);
+            // Không rollback ở đây
+            return Optional.empty();
+        }
+
+        String insertSql = "INSERT INTO BorrowingRecords (bookInternalId, userId, borrowDate, dueDate, status) VALUES (?, ?, ?, ?, ?)";
+        BorrowingRecord newLoan = new BorrowingRecord(bookInternalId, userId, borrowDate, dueDate);
+        try (PreparedStatement insertPstmt = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+            insertPstmt.setInt(1, newLoan.getBookInternalId());
+            insertPstmt.setString(2, newLoan.getUserId());
+            insertPstmt.setString(3, newLoan.getBorrowDate().format(DB_DATE_FORMATTER));
+            insertPstmt.setString(4, newLoan.getDueDate().format(DB_DATE_FORMATTER));
+            insertPstmt.setString(5, newLoan.getStatus().name());
+
+            int affectedRows = insertPstmt.executeUpdate();
+            if (affectedRows > 0) {
+                try (ResultSet generatedKeys = insertPstmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        newLoan.setRecordId(generatedKeys.getInt(1));
+                        System.out.println("DEBUG_BRS_CREATE_LOAN_LOGIC: BorrowingRecord prepared with ID: " + newLoan.getRecordId());
+                        return Optional.of(newLoan);
+                    }
+                }
+            }
+            System.err.println("ERROR_BRS_CREATE_LOAN_LOGIC: Creating BorrowingRecord failed in DB.");
+            return Optional.empty();
+        }
+    }
+
+
+    // Tương tự, tách logic cho recordBookReturn
+    public boolean recordBookReturn(int loanRecordId, LocalDate actualReturnDate) {
+        Connection conn = null;
         try {
             conn = DatabaseManager.getInstance().getConnection();
-            conn.setAutoCommit(false); // BẮT ĐẦU TRANSACTION
+            conn.setAutoCommit(false);
 
-            // 1. Kiểm tra người dùng có đang mượn sách này mà chưa trả không
-            try (PreparedStatement checkPstmt = conn.prepareStatement(checkExistingSql)) {
-                checkPstmt.setInt(1, bookInternalId);
-                checkPstmt.setString(2, userId);
-                checkPstmt.setString(3, LoanStatus.ACTIVE.name());
-                checkPstmt.setString(4, LoanStatus.OVERDUE.name());
-                try (ResultSet rs = checkPstmt.executeQuery()) {
-                    if (rs.next() && rs.getInt("count") > 0) {
-                        System.err.println("ERROR_BRS_CREATE_LOAN: User " + userId + " is already actively borrowing book with internalId " + bookInternalId);
-                        conn.rollback();
-                        return Optional.empty();
-                    }
-                }
-            }
+            boolean success = recordBookReturnLogic(conn, loanRecordId, actualReturnDate);
 
-            // 2. Giảm số lượng sách có sẵn (TRUYỀN CONNECTION)
-            if (!bookManagementService.handleBookBorrowedByInternalId(conn, bookInternalId)) {
-                // BookManagementService.handleBookBorrowedByInternalId(conn,...) sẽ trả về false nếu logic thất bại
-                // (ví dụ: sách hết, không tìm thấy). SQLException sẽ được ném nếu có lỗi DB nghiêm trọng.
-                System.err.println("ERROR_BRS_CREATE_LOAN: Failed to update book available quantity for internalId " + bookInternalId + " (handled by BookManagementService).");
+            if (success) {
+                conn.commit();
+                return true;
+            } else {
                 conn.rollback();
-                return Optional.empty();
+                return false;
             }
-
-            // 3. Tạo bản ghi mượn sách mới
-            BorrowingRecord newLoan = new BorrowingRecord(bookInternalId, userId, borrowDate, dueDate); // Status mặc định là ACTIVE
-            try (PreparedStatement insertPstmt = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
-                insertPstmt.setInt(1, newLoan.getBookInternalId());
-                insertPstmt.setString(2, newLoan.getUserId());
-                insertPstmt.setString(3, newLoan.getBorrowDate().format(DB_DATE_FORMATTER));
-                insertPstmt.setString(4, newLoan.getDueDate().format(DB_DATE_FORMATTER));
-                insertPstmt.setString(5, newLoan.getStatus().name());
-
-                int affectedRows = insertPstmt.executeUpdate();
-                if (affectedRows > 0) {
-                    try (ResultSet generatedKeys = insertPstmt.getGeneratedKeys()) {
-                        if (generatedKeys.next()) {
-                            newLoan.setRecordId(generatedKeys.getInt(1));
-                            conn.commit(); // COMMIT TRANSACTION NẾU TẤT CẢ THÀNH CÔNG
-                            System.out.println("DEBUG_BRS_CREATE_LOAN: New loan created: ID " + newLoan.getRecordId() + " for book internalId " + bookInternalId);
-                            return Optional.of(newLoan);
-                        }
-                    }
-                }
-                // Nếu không lấy được ID hoặc không có dòng nào bị ảnh hưởng
-                conn.rollback();
-                System.err.println("ERROR_BRS_CREATE_LOAN: Creating BorrowingRecord failed, no ID obtained or no rows affected.");
-                return Optional.empty();
-            }
-
-        } catch (SQLException e) { // Bắt SQLException từ bất kỳ thao tác DB nào trong khối try
-            System.err.println("ERROR_BRS_CREATE_LOAN: SQLException occurred during createLoan transaction for bookId " + bookInternalId + ": " + e.getMessage());
+        } catch (SQLException e) {
+            System.err.println("ERROR_BRS_RETURN (standalone): SQLException: " + e.getMessage());
             if (conn != null) {
-                try {
-                    System.err.println("Attempting to rollback transaction due to SQLException...");
-                    conn.rollback();
-                } catch (SQLException exRollback) {
-                    System.err.println("ERROR_BRS_CREATE_LOAN_ROLLBACK_EX: Failed to rollback transaction: " + exRollback.getMessage());
-                }
+                try { conn.rollback(); } catch (SQLException ex) { System.err.println("ERROR_BRS_RETURN_ROLLBACK_EX (standalone): " + ex.getMessage());}
             }
-            return Optional.empty();
+            return false;
         } finally {
             if (conn != null) {
-                try {
-                    conn.setAutoCommit(true); // Khôi phục trạng thái autoCommit
-                    conn.close();
-                } catch (SQLException exClose) {
-                    System.err.println("ERROR_BRS_CREATE_LOAN_CLOSE_EX: Failed to close connection: " + exClose.getMessage());
-                }
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ex) { System.err.println("ERROR_BRS_RETURN_CLOSE_EX (standalone): " + ex.getMessage());}
             }
         }
     }
 
-    public boolean recordBookReturn(int loanRecordId, LocalDate actualReturnDate) {
+    public boolean recordBookReturnLogic(Connection conn, int loanRecordId, LocalDate actualReturnDate) throws SQLException {
         if (actualReturnDate == null) {
-            System.err.println("ERROR_BRS_RETURN: Actual return date cannot be null.");
-            return false;
+            System.err.println("ERROR_BRS_RETURN_LOGIC: Actual return date cannot be null.");
+            return false; // Hoặc ném IllegalArgumentException
         }
 
-        Optional<BorrowingRecord> loanOpt = findLoanById(loanRecordId); // findLoanById tự quản lý connection
+        // Lấy thông tin lượt mượn. findLoanById này cần được xem xét: nó tự mở connection.
+        // Để tối ưu, findLoanById cũng nên nhận connection nếu được gọi trong transaction.
+        // Tạm thời chấp nhận nó mở connection riêng cho việc đọc này.
+        Optional<BorrowingRecord> loanOpt = findLoanById(loanRecordId);
         if (loanOpt.isEmpty()) {
-            System.err.println("ERROR_BRS_RETURN: Loan " + loanRecordId + " not found.");
+            System.err.println("ERROR_BRS_RETURN_LOGIC: Loan " + loanRecordId + " not found.");
             return false;
         }
         BorrowingRecord loan = loanOpt.get();
         if (loan.getStatus() == LoanStatus.RETURNED) {
-            System.out.println("WARN_BRS_RETURN: Book for loan " + loanRecordId + " has already been returned on " + loan.getReturnDate());
-            return true;
+            System.out.println("WARN_BRS_RETURN_LOGIC: Book for loan " + loanRecordId + " already returned.");
+            return true; // Coi như thành công
         }
 
         String updateSql = "UPDATE BorrowingRecords SET returnDate = ?, status = ? WHERE id = ?";
-        Connection conn = null;
-        try {
-            conn = DatabaseManager.getInstance().getConnection();
-            conn.setAutoCommit(false); // BẮT ĐẦU TRANSACTION
-
-            // 1. Cập nhật bản ghi mượn
-            try (PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
-                pstmt.setString(1, actualReturnDate.format(DB_DATE_FORMATTER));
-                pstmt.setString(2, LoanStatus.RETURNED.name());
-                pstmt.setInt(3, loanRecordId);
-                int affectedRows = pstmt.executeUpdate();
-                if (affectedRows == 0) {
-                    conn.rollback();
-                    System.err.println("ERROR_BRS_RETURN: Failed to update loan record " + loanRecordId + " in DB. Loan might not exist.");
-                    return false;
-                }
-            }
-
-            // 2. Tăng số lượng sách có sẵn (TRUYỀN CONNECTION)
-            if (!bookManagementService.handleBookReturnedByInternalId(conn, loan.getBookInternalId())) {
-                System.err.println("ERROR_BRS_RETURN: Failed to update book available quantity for internalId " + loan.getBookInternalId() + ". Rolling back loan status update.");
-                conn.rollback();
+        try (PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
+            pstmt.setString(1, actualReturnDate.format(DB_DATE_FORMATTER));
+            pstmt.setString(2, LoanStatus.RETURNED.name());
+            pstmt.setInt(3, loanRecordId);
+            if (pstmt.executeUpdate() == 0) {
+                System.err.println("ERROR_BRS_RETURN_LOGIC: Failed to update BorrowingRecord " + loanRecordId + " in DB.");
                 return false;
             }
-
-            conn.commit(); // COMMIT TRANSACTION
-            System.out.println("DEBUG_BRS_RETURN: Loan " + loanRecordId + " marked as RETURNED on " + actualReturnDate);
-            return true;
-
-        } catch (SQLException e) { // Bắt SQLException từ bất kỳ thao tác DB nào
-            System.err.println("ERROR_BRS_RETURN: SQLException occurred during recordBookReturn transaction for loan " + loanRecordId + ": " + e.getMessage());
-            if (conn != null) {
-                try {
-                    System.err.println("Attempting to rollback transaction due to SQLException...");
-                    conn.rollback();
-                } catch (SQLException exRollback) {
-                    System.err.println("ERROR_BRS_RETURN_ROLLBACK_EX: Failed to rollback transaction: " + exRollback.getMessage());
-                }
-            }
-            return false;
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                } catch (SQLException exClose) {
-                    System.err.println("ERROR_BRS_RETURN_CLOSE_EX: Failed to close connection: " + exClose.getMessage());
-                }
-            }
         }
+
+        if (!bookManagementService.handleBookReturnedByInternalId(conn, loan.getBookInternalId())) {
+            System.err.println("ERROR_BRS_RETURN_LOGIC: Failed to update book quantity for internalId " + loan.getBookInternalId());
+            return false;
+        }
+        System.out.println("DEBUG_BRS_RETURN_LOGIC: Loan " + loanRecordId + " processed for return.");
+        return true;
     }
 
+    // Các phương thức get... không thay đổi, chúng tự quản lý connection cho việc đọc
     public Optional<BorrowingRecord> findLoanById(int loanRecordId) {
+        // ... (Giữ nguyên code của bạn) ...
         String sql = "SELECT * FROM BorrowingRecords WHERE id = ?";
-        try (Connection conn = DatabaseManager.getInstance().getConnection(); // Connection cho thao tác đọc này
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, loanRecordId);
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -229,16 +233,17 @@ public class BorrowingRecordService {
     }
 
     public List<BorrowingRecord> getLoansByUserId(String userId, boolean activeOnly) {
+        // ... (Giữ nguyên code của bạn) ...
         if (userId == null || userId.trim().isEmpty()) {
             System.err.println("WARN_BRS_GET_USER_LOANS: User ID is null or empty.");
             return new ArrayList<>();
         }
-        updateAllOverdueStatuses(LocalDate.now()); // Cập nhật trước khi lấy
+        updateAllOverdueStatuses(LocalDate.now());
 
         List<BorrowingRecord> records = new ArrayList<>();
         StringBuilder sqlBuilder = new StringBuilder("SELECT * FROM BorrowingRecords WHERE userId = ?");
         if (activeOnly) {
-            sqlBuilder.append(" AND status IN (?, ?)"); // ACTIVE or OVERDUE
+            sqlBuilder.append(" AND status IN (?, ?)");
         }
         sqlBuilder.append(" ORDER BY borrowDate DESC, dueDate DESC");
 
@@ -261,22 +266,19 @@ public class BorrowingRecordService {
     }
 
     public List<BorrowingRecord> getLoansByBookInternalId(int bookInternalId, boolean activeOnly) {
+        // ... (Giữ nguyên code của bạn) ...
         if (bookInternalId <= 0) {
             System.err.println("WARN_BRS_GET_BOOK_LOANS: Invalid bookInternalId: " + bookInternalId);
             return new ArrayList<>();
         }
-        // Cân nhắc có nên gọi updateAllOverdueStatuses ở đây không,
-        // nếu hàm này được gọi thường xuyên và updateAllOverdueStatuses tốn kém.
-        // Tuy nhiên, để đảm bảo dữ liệu trạng thái chính xác, có thể giữ lại.
-        if (activeOnly) { // Chỉ cập nhật nếu cần xem trạng thái active/overdue
+        if (activeOnly) {
             updateAllOverdueStatuses(LocalDate.now());
         }
-
 
         List<BorrowingRecord> records = new ArrayList<>();
         StringBuilder sqlBuilder = new StringBuilder("SELECT * FROM BorrowingRecords WHERE bookInternalId = ?");
         if (activeOnly) {
-            sqlBuilder.append(" AND status IN (?, ?)"); // ACTIVE or OVERDUE
+            sqlBuilder.append(" AND status IN (?, ?)");
         }
         sqlBuilder.append(" ORDER BY borrowDate DESC, dueDate DESC");
 
@@ -299,6 +301,7 @@ public class BorrowingRecordService {
     }
 
     public void updateAllOverdueStatuses(LocalDate currentDate) {
+        // ... (Giữ nguyên code của bạn) ...
         System.out.println("DEBUG_BRS_OVERDUE_UPDATE: Checking and updating overdue statuses for date: " + currentDate);
         String updateSql = "UPDATE BorrowingRecords SET status = ? WHERE status = ? AND dueDate < ?";
         int updatedCount = 0;
@@ -314,17 +317,15 @@ public class BorrowingRecordService {
 
             if (updatedCount > 0) {
                 System.out.println("DEBUG_BRS_OVERDUE_UPDATE: Total " + updatedCount + " loans updated to OVERDUE in DB.");
-            } else {
-                // System.out.println("DEBUG_BRS_OVERDUE_UPDATE: No active loans found to update to OVERDUE status for date " + currentDate);
             }
-
         } catch (SQLException e) {
             System.err.println("ERROR_BRS_OVERDUE_UPDATE: DB error updating overdue statuses: " + e.getMessage());
         }
     }
 
     public List<BorrowingRecord> getOverdueLoans(LocalDate currentDate) {
-        updateAllOverdueStatuses(currentDate); // Đảm bảo trạng thái được cập nhật
+        // ... (Giữ nguyên code của bạn) ...
+        updateAllOverdueStatuses(currentDate);
         List<BorrowingRecord> records = new ArrayList<>();
         String sql = "SELECT * FROM BorrowingRecords WHERE status = ? ORDER BY dueDate ASC";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
@@ -342,6 +343,7 @@ public class BorrowingRecordService {
     }
 
     public List<BorrowingRecord> getAllLoans() {
+        // ... (Giữ nguyên code của bạn) ...
         List<BorrowingRecord> records = new ArrayList<>();
         String sql = "SELECT * FROM BorrowingRecords ORDER BY borrowDate DESC, id DESC";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
@@ -357,6 +359,7 @@ public class BorrowingRecordService {
     }
 
     public List<BorrowingRecord> getAllActiveLoans() {
+        // ... (Giữ nguyên code của bạn) ...
         updateAllOverdueStatuses(LocalDate.now());
         List<BorrowingRecord> records = new ArrayList<>();
         String sql = "SELECT * FROM BorrowingRecords WHERE status = ? OR status = ? ORDER BY dueDate ASC";
@@ -376,6 +379,7 @@ public class BorrowingRecordService {
     }
 
     public int countActiveLoans() {
+        // ... (Giữ nguyên code của bạn) ...
         updateAllOverdueStatuses(LocalDate.now());
         String sql = "SELECT COUNT(*) AS count FROM BorrowingRecords WHERE status = ? OR status = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
@@ -394,6 +398,7 @@ public class BorrowingRecordService {
     }
 
     public int countOverdueLoans() {
+        // ... (Giữ nguyên code của bạn) ...
         updateAllOverdueStatuses(LocalDate.now());
         String sql = "SELECT COUNT(*) AS count FROM BorrowingRecords WHERE status = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();

@@ -16,17 +16,18 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.layout.VBox; // Import VBox nếu dùng trong ListCell
+import javafx.scene.layout.VBox;
 
 import java.net.URL;
+import java.time.LocalDate; // Thêm import này nếu cần
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList; // Đã có
-import java.util.Arrays;    // Đã có
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;  // Đã có
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;    // Đã có
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,7 +51,7 @@ public class UserDonationController implements Initializable {
     private ObservableList<DonationRequest> userDonationHistory;
     private final DateTimeFormatter displayDateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    private UserDashboardController dashboardController; // Thêm để có thể gọi lại dashboard
+    private UserDashboardController dashboardController;
 
     public void setDashboardController(UserDashboardController dashboardController) {
         this.dashboardController = dashboardController;
@@ -91,18 +92,19 @@ public class UserDonationController implements Initializable {
         if (categoryComboBox == null) return;
         Set<String> categories = new HashSet<>();
         List<String> distinctCategories = bookManagementService.getAllDistinctCategories();
-        if (distinctCategories != null && !distinctCategories.isEmpty()) { // Kiểm tra null và rỗng
+        if (distinctCategories != null && !distinctCategories.isEmpty()) {
             categories.addAll(distinctCategories);
         }
-        if (categories.isEmpty()) { // Chỉ thêm mặc định nếu sau khi lấy từ service vẫn rỗng
-            categories.addAll(Arrays.asList("Văn học", "Kinh tế", "Khoa học", "Lịch sử", "Thiếu nhi", "Ngoại ngữ", "Kỹ năng", "Truyện tranh", "Giáo trình"));
+        // Thêm các thể loại mặc định nếu danh sách từ service rỗng hoặc để bổ sung
+        if (categories.isEmpty()) { // Hoặc bạn có thể luôn thêm các mục này
+            categories.addAll(Arrays.asList("Văn học", "Kinh tế", "Khoa học", "Lịch sử", "Thiếu nhi", "Ngoại ngữ", "Kỹ năng", "Truyện tranh", "Giáo trình", "Khác"));
         }
 
         ObservableList<String> categoryOptions = FXCollections.observableArrayList(new ArrayList<>(categories));
         Collections.sort(categoryOptions, String.CASE_INSENSITIVE_ORDER);
         categoryComboBox.setItems(categoryOptions);
         categoryComboBox.setPromptText("-- Chọn hoặc nhập thể loại --");
-        categoryComboBox.setEditable(true);
+        categoryComboBox.setEditable(true); // Cho phép người dùng nhập thể loại mới
     }
 
     private void populateLanguageComboBox() {
@@ -110,7 +112,7 @@ public class UserDonationController implements Initializable {
         ObservableList<String> languages = FXCollections.observableArrayList("Tiếng Việt", "Tiếng Anh", "Tiếng Pháp", "Tiếng Nhật", "Tiếng Hàn", "Ngôn ngữ khác");
         languageComboBox.setItems(languages);
         languageComboBox.setPromptText("-- Chọn ngôn ngữ --");
-        languageComboBox.setValue("Tiếng Việt");
+        languageComboBox.setValue("Tiếng Việt"); // Ngôn ngữ mặc định
     }
 
     private void setupDonationHistoryListView() {
@@ -131,29 +133,35 @@ public class UserDonationController implements Initializable {
                 adminNotesLabel.setWrapText(true);
                 vbox.getChildren().addAll(bookInfoLabel, dateAndStatusLabel, reasonLabel, adminNotesLabel);
                 vbox.setPadding(new Insets(10));
-                vbox.getStyleClass().add("list-cell-container");
+                vbox.getStyleClass().add("list-cell-container"); // Class chung cho cell
             }
             @Override
             protected void updateItem(DonationRequest item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setGraphic(null);
+                    setText(null); // Đảm bảo text cũng được xóa
                 } else {
                     bookInfoLabel.setText("Sách: " + item.getBookName() +
                             (item.getAuthorName()!=null && !item.getAuthorName().isEmpty() ?
                                     " - Tác giả: " + item.getAuthorName() : ""));
-                    String statusText = item.getStatus().name();
-                    String statusStyleClass = "status-default"; // Class CSS mặc định
-                    switch (item.getStatus()) {
-                        case PENDING_APPROVAL: statusText = "Chờ duyệt"; statusStyleClass = "status-pending"; break;
-                        case APPROVED_PENDING_RECEIPT: statusText = "Đã duyệt (chờ nhận)"; statusStyleClass = "status-approved"; break;
-                        case COMPLETED: statusText = "Đã hoàn tất"; statusStyleClass = "status-completed"; break;
-                        case REJECTED: statusText = "Bị từ chối"; statusStyleClass = "status-rejected"; break;
-                        case CANCELED_BY_USER: statusText = "Bạn đã hủy"; statusStyleClass = "status-canceled-user"; break;
-                        default: statusText = item.getStatus().toString(); // Giữ nguyên nếu có trạng thái lạ
+
+                    String statusText = "Không rõ"; // Mặc định
+                    String statusStyleClass = "status-unknown";
+                    if (item.getStatus() != null) {
+                        statusText = item.getStatus().getDisplayName(); // Sử dụng getDisplayName
+                        switch (item.getStatus()) {
+                            case PENDING_APPROVAL: statusStyleClass = "status-pending"; break;
+                            case APPROVED_PENDING_RECEIPT: statusStyleClass = "status-approved"; break;
+                            case COMPLETED: statusStyleClass = "status-completed"; break;
+                            case REJECTED: statusStyleClass = "status-rejected"; break;
+                            case CANCELED_BY_USER: statusStyleClass = "status-canceled-user"; break;
+                            default: statusStyleClass = "status-unknown";
+                        }
                     }
-                    dateAndStatusLabel.setText("Gửi: " + item.getRequestDate().format(displayDateFormatter) + " - Trạng thái: " + statusText);
-                    dateAndStatusLabel.getStyleClass().setAll("donation-history-status", statusStyleClass); // Dùng setAll để ghi đè class cũ
+                    dateAndStatusLabel.setText("Gửi: " + (item.getRequestDate() != null ? item.getRequestDate().format(displayDateFormatter) : "N/A") +
+                            " - Trạng thái: " + statusText);
+                    dateAndStatusLabel.getStyleClass().setAll("donation-history-status", statusStyleClass);
 
                     reasonLabel.setText("Lý do quyên góp: " + (item.getReasonForContribution() != null && !item.getReasonForContribution().isEmpty() ? item.getReasonForContribution() : "(không có)"));
                     reasonLabel.setVisible(item.getReasonForContribution() != null && !item.getReasonForContribution().isEmpty());
@@ -171,7 +179,8 @@ public class UserDonationController implements Initializable {
     private void loadDonationHistory() {
         if (currentUser == null) return;
         List<DonationRequest> history = donationRequestService.getRequestsByUserId(currentUser.getUserId());
-        history.sort(Comparator.comparing(DonationRequest::getRequestDate).reversed());
+        // Sắp xếp lịch sử theo ngày yêu cầu giảm dần (mới nhất lên đầu)
+        history.sort(Comparator.comparing(DonationRequest::getRequestDate, Comparator.nullsLast(Comparator.reverseOrder())));
         userDonationHistory.setAll(history);
         if (donationHistoryListView != null) {
             donationHistoryListView.setPlaceholder(new Label(history.isEmpty() ? "Bạn chưa có lịch sử quyên góp nào." : ""));
@@ -186,15 +195,20 @@ public class UserDonationController implements Initializable {
         }
         String bookName = bookNameField.getText().trim();
         String authorName = authorNameField.getText().trim();
-        String category = categoryComboBox.getEditor().getText().trim();
-        if (category.isEmpty() && categoryComboBox.getValue() != null) {
-            category = categoryComboBox.getValue();
+        String category = categoryComboBox.getEditor().getText().trim(); // Lấy text từ editor nếu người dùng nhập mới
+        if (category.isEmpty() && categoryComboBox.getValue() != null && !categoryComboBox.getValue().equals(categoryComboBox.getPromptText())) {
+            category = categoryComboBox.getValue(); // Nếu editor rỗng và có giá trị được chọn, lấy giá trị đó
         }
-        String language = languageComboBox.getValue(); // Ngôn ngữ có thể là null nếu không chọn
+        String language = languageComboBox.getValue();
         String reason = reasonTextArea.getText().trim();
 
         if (bookName.isEmpty()) { showError("Tên sách là bắt buộc."); return; }
-        if (category == null || category.isEmpty()) { showError("Thể loại sách là bắt buộc."); return; }
+        if (category == null || category.isEmpty() || category.equals(categoryComboBox.getPromptText())) {
+            showError("Thể loại sách là bắt buộc."); return;
+        }
+        if (language == null || language.equals(languageComboBox.getPromptText())) { // Ngôn ngữ cũng nên được chọn
+            showError("Vui lòng chọn ngôn ngữ cho sách."); return;
+        }
         clearError();
 
         DonationRequest newRequest = new DonationRequest(
@@ -202,18 +216,23 @@ public class UserDonationController implements Initializable {
 
         Optional<DonationRequest> createdRequestOpt = donationRequestService.createRequest(newRequest);
         if (createdRequestOpt.isPresent()) {
+            DonationRequest createdRequest = createdRequestOpt.get(); // Lấy đối tượng request đã tạo
             showAlert(Alert.AlertType.INFORMATION, "Thành Công", "Yêu cầu quyên góp của bạn đã được gửi. Ban quản trị thư viện xin chân thành cảm ơn!");
 
-            // Thông báo cho Admin (cần đảm bảo NotificationType.NEW_DONATION_REQUEST_ADMIN đã được định nghĩa)
+            // --- SỬA LỖI Ở ĐÂY ---
+            // Sử dụng NotificationType.NEW_DONATION_REQUEST (đã có displayName)
+            // userId là null vì đây là thông báo cho hệ thống/admin, không phải cho người dùng cụ thể này
             notificationService.createNotification(
-                    null,
+                    null, // Hoặc một ID đặc biệt cho Admin nếu cần phân loại
                     "Yêu cầu quyên góp mới từ user '" + currentUser.getUsername() + "': Sách '" + bookName + "'.",
-                    Notification.NotificationType.NEW_DONATION_REQUEST_ADMIN,
-                    createdRequestOpt.get().getRequestId(),
-                    null
+                    Notification.NotificationType.NEW_DONATION_REQUEST, // Sử dụng hằng số đúng
+                    createdRequest.getRequestId(), // ID của yêu cầu quyên góp vừa tạo
+                    "VIEW_DONATION_REQUESTS_TAB" // Ví dụ actionLink để admin điều hướng
             );
+            // --- KẾT THÚC SỬA LỖI ---
+
             clearForm();
-            loadDonationHistory();
+            loadDonationHistory(); // Tải lại lịch sử để hiển thị yêu cầu mới
         } else {
             showAlert(Alert.AlertType.ERROR, "Thất Bại", "Không thể gửi yêu cầu quyên góp. Vui lòng thử lại sau.");
         }
@@ -222,8 +241,14 @@ public class UserDonationController implements Initializable {
     private void clearForm() {
         if (bookNameField != null) bookNameField.clear();
         if (authorNameField != null) authorNameField.clear();
-        if (categoryComboBox != null) {categoryComboBox.getSelectionModel().select(null); categoryComboBox.getEditor().clear(); categoryComboBox.setPromptText("-- Chọn hoặc nhập thể loại --");}
-        if (languageComboBox != null) {languageComboBox.getSelectionModel().select("Tiếng Việt");} // Reset về mặc định
+        if (categoryComboBox != null) {
+            categoryComboBox.getSelectionModel().clearSelection(); // Xóa lựa chọn
+            categoryComboBox.getEditor().clear(); // Xóa text trong editor
+            categoryComboBox.setPromptText("-- Chọn hoặc nhập thể loại --"); // Đặt lại prompt text
+        }
+        if (languageComboBox != null) {
+            languageComboBox.setValue("Tiếng Việt"); // Reset về giá trị mặc định
+        }
         if (reasonTextArea != null) reasonTextArea.clear();
         clearError();
     }
@@ -249,17 +274,22 @@ public class UserDonationController implements Initializable {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
-        applyDialogStyles(alert.getDialogPane()); // Sửa: truyền DialogPane
+        if (alert.getDialogPane() != null) { // Kiểm tra null trước khi áp dụng
+            applyDialogStyles(alert.getDialogPane());
+        }
         alert.showAndWait();
     }
 
-    // Sửa: applyDialogStyles nhận DialogPane
     private void applyDialogStyles(DialogPane dialogPane) {
         try {
             URL cssUrl = getClass().getResource("/com/lms/quanlythuvien/css/styles.css");
             if (cssUrl != null) {
                 dialogPane.getStylesheets().add(cssUrl.toExternalForm());
+            } else {
+                System.err.println("WARN_UserDonation_CSS: CSS file not found for dialogs.");
             }
-        } catch (Exception e) { System.err.println("WARN_DIALOG_CSS: Failed to load CSS for dialog: " + e.getMessage()); }
+        } catch (Exception e) {
+            System.err.println("WARN_UserDonation_CSS: Failed to load CSS for dialog: " + e.getMessage());
+        }
     }
 }
