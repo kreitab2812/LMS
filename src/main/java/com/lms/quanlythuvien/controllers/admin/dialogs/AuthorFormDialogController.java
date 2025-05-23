@@ -35,7 +35,7 @@ public class AuthorFormDialogController implements Initializable {
     @FXML private TextField avatarUrlField;
     @FXML private Label errorFormLabel;
     @FXML private Button saveAuthorButton;
-    // @FXML private Button cancelAuthorButton; // Nút Cancel đã được ButtonBar xử lý
+    // @FXML private Button cancelAuthorButton;
 
     private Stage dialogStage;
     private Author currentAuthor; // Tác giả đang được sửa, hoặc null nếu thêm mới

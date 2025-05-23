@@ -3,7 +3,7 @@ package com.lms.quanlythuvien.controllers.admin.dialogs;
 import com.github.sarxos.webcam.Webcam;
 import com.github.sarxos.webcam.WebcamResolution;
 import com.google.zxing.BinaryBitmap;
-import com.google.zxing.LuminanceSource; // <<< THÊM IMPORT NÀY
+import com.google.zxing.LuminanceSource;
 import com.google.zxing.MultiFormatReader;
 import com.google.zxing.NotFoundException;
 import com.google.zxing.Result;
@@ -11,22 +11,20 @@ import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.common.HybridBinarizer;
 
 import javafx.application.Platform;
-// import javafx.beans.property.ObjectProperty; // Không được sử dụng, có thể bỏ
-// import javafx.beans.property.SimpleObjectProperty; // Không được sử dụng, có thể bỏ
 import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.image.Image; // Image của JavaFX đã được import ngầm khi dùng ImageView
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 
 import java.awt.Dimension;
 import java.util.List;
 import java.awt.image.BufferedImage;
-import java.util.Optional; // <<< THÊM IMPORT NÀY
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
@@ -122,7 +120,6 @@ public class QRScannerDialogController {
                     } catch (NotFoundException e) {
                         // Không tìm thấy QR code trong frame này, không làm gì cả, vòng lặp tiếp tục
                     }
-                    // Có thể thêm một khoảng nghỉ nhỏ ở đây nếu cần thiết, nhưng webcam.getImage() có thể đã block đủ
                     Thread.sleep(50); // Giảm tần suất quét một chút
                 }
                 System.out.println("QRScanner: Scanning loop ended. Cancelled: " + isCancelled() + ", Webcam open: " + (webcam !=null && webcam.isOpen()));
@@ -176,8 +173,6 @@ public class QRScannerDialogController {
     }
 
     private void closeDialog() {
-        // Đã gọi stopCameraAndTask() từ nơi gọi closeDialog (ví dụ: trong Task hoặc handleCancelAction)
-        // Nếu chưa, cần gọi ở đây:
         // stopCameraAndTask();
 
         if (cancelButton != null && cancelButton.getScene() != null && cancelButton.getScene().getWindow() != null) {

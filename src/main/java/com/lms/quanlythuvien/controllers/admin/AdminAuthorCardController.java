@@ -1,6 +1,6 @@
 package com.lms.quanlythuvien.controllers.admin;
 
-import com.lms.quanlythuvien.models.item.Author; // Đổi tên model cho khớp
+import com.lms.quanlythuvien.models.item.Author;
 import com.lms.quanlythuvien.services.library.AuthorManagementService;
 import com.lms.quanlythuvien.exceptions.DeletionRestrictedException;
 import com.lms.quanlythuvien.utils.session.SessionManager;
